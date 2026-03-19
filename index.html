@@ -17,6 +17,11 @@
             align-items: center; justify-content: center; z-index: 100; color: white; backdrop-filter: blur(8px);
         }
         #pause-menu { display: none; background: rgba(0, 0, 0, 0.6); z-index: 90; }
+        #admin-ui { display: none; background: rgba(0, 0, 0, 0.65); z-index: 95; }
+        #admin-ui .menu-box { max-width: 560px; }
+        .admin-section-title { font-weight: 900; color: #ffd700; letter-spacing: 1px; font-family: 'Orbitron', sans-serif; margin-bottom: 8px; }
+        .admin-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; }
+        .admin-checks label { font-size: 13px; color: #eee; }
 
         #shop-ui {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -229,6 +234,42 @@
             <h1 style="font-size:28px;">PAUSED</h1>
             <button id="resume-btn" class="menu-btn">Resume</button>
             <button id="reset-btn" class="menu-btn" style="background:linear-gradient(135deg,#cc3333,#881111); margin-top:12px;">Reset Character</button>
+        </div>
+    </div>
+
+    <div id="admin-ui" class="overlay-menu">
+        <div class="menu-box">
+            <h1 style="font-size:28px; margin-bottom:6px;">ADMIN PANEL</h1>
+            <div style="color:#666; font-size:12px; margin-top:-6px; margin-bottom:12px; font-family:'Orbitron',sans-serif;">
+                Only available for username <b>dev</b>. Press <b>F2</b> to toggle.
+            </div>
+
+            <div class="admin-section">
+                <div class="row" style="margin-top:0;">
+                    <input type="number" id="admin-coin-input" min="0" value="100" style="width:130px;" />
+                    <button id="admin-apply-coins" class="menu-btn" style="flex:0; max-width:180px;">Set Coins</button>
+                </div>
+            </div>
+
+            <div class="admin-section" style="margin-top:16px; text-align:left;">
+                <div class="admin-section-title">Grant Perks</div>
+                <div class="admin-checks">
+                    <label><input type="checkbox" id="admin-ck-gun" /> Gun</label>
+                    <label><input type="checkbox" id="admin-ck-grenade" /> Grenade</label>
+                    <label><input type="checkbox" id="admin-ck-speedBoost" /> Speed Boost</label>
+                    <label><input type="checkbox" id="admin-ck-biggerBoom" /> Big Boom</label>
+                    <label><input type="checkbox" id="admin-ck-heavyGrenades" /> Heavy Grenades</label>
+                </div>
+                <button id="admin-apply-items" class="menu-btn" style="margin-top:12px; width:100%; background:linear-gradient(135deg,#3399ff,#2277dd);">Apply</button>
+            </div>
+
+            <div class="admin-section" style="margin-top:16px; text-align:left;">
+                <div class="admin-section-title">Admin Actions</div>
+                <button id="admin-spawn-npcs" class="menu-btn" style="margin-top:6px; width:100%; background:linear-gradient(135deg,#6a5cff,#3b2aa5); flex:0;">Spawn NPCs</button>
+                <button id="admin-test-boom" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff8844,#aa3311); flex:0;">Test Explosion</button>
+            </div>
+
+            <button id="admin-close-btn" class="menu-btn" style="background:linear-gradient(135deg,#444,#222); margin-top:16px;">Close</button>
         </div>
     </div>
 
@@ -712,6 +753,8 @@
         const grenades = [];
         const explosions = [];
 
+        let adminOpen = false, adminDevEnabled = false;
+
         let actionMode = false, fpsMode = false;
         let recoilOffset = { x: 0, y: 0 }, camShake = { x: 0, y: 0, intensity: 0 };
         let targetFov = 70, currentFov = 70, fpsGunBob = 0, fpsGunRecoil = 0;
@@ -977,7 +1020,7 @@
         document.getElementById('chat-input').addEventListener('input', () => { playTypeSound(); });
 
         window.addEventListener('keydown', (e) => {
-            if (!gameActive) return;
+            if (!gameActive || adminOpen) return;
             if ((e.key === 'Enter' || e.key === '/' || e.key === '-') && !chatFocused) {
                 e.preventDefault();
                 openChat();
@@ -2669,6 +2712,7 @@
                 updateMapContext();
                 gameActive = true;
                 updateCoinDisplay();
+                initAdminPanel();
 
                 if (isMobile) {
                     document.getElementById('mobile-controls').style.display = 'block';
@@ -2678,6 +2722,126 @@
                 alert("Game Failed: " + err.message);
                 console.error(err);
             }
+        }
+
+        function isDevUser() {
+            return (username || '').toLowerCase() === 'dev';
+        }
+
+        function syncAdminGrantCheckboxes() {
+            const ids = ['gun', 'grenade', 'speedBoost', 'biggerBoom', 'heavyGrenades'];
+            const map = {
+                gun: 'admin-ck-gun',
+                grenade: 'admin-ck-grenade',
+                speedBoost: 'admin-ck-speedBoost',
+                biggerBoom: 'admin-ck-biggerBoom',
+                heavyGrenades: 'admin-ck-heavyGrenades'
+            };
+            for (const k of ids) {
+                const el = document.getElementById(map[k]);
+                if (el) el.checked = !!inventory[k];
+            }
+        }
+
+        function syncHotbarVisibilityForOwnedItems() {
+            // Gun (slot 2)
+            const slot2 = document.getElementById('slot-2');
+            const btn2 = document.getElementById('btn-slot2');
+            const showGun = !!inventory.gun;
+            if (slot2) slot2.style.display = showGun ? 'flex' : 'none';
+            if (btn2) btn2.style.display = showGun ? 'flex' : 'none';
+
+            // Grenade (slot 3)
+            const slot3 = document.getElementById('slot-3');
+            const btn3 = document.getElementById('btn-slot3');
+            const showGrenade = !!inventory.grenade;
+            if (slot3) slot3.style.display = showGrenade ? 'flex' : 'none';
+            if (btn3) btn3.style.display = showGrenade ? 'flex' : 'none';
+        }
+
+        function openAdminPanel() {
+            if (!adminDevEnabled) return;
+            adminOpen = true;
+            closeShop();
+            if (document.getElementById('admin-ui')) document.getElementById('admin-ui').style.display = 'flex';
+
+            if (!isMobile) {
+                try { document.exitPointerLock(); } catch (e) {}
+            }
+
+            const coinInput = document.getElementById('admin-coin-input');
+            if (coinInput) coinInput.value = coins;
+            syncAdminGrantCheckboxes();
+        }
+
+        function closeAdminPanel() {
+            adminOpen = false;
+            const ui = document.getElementById('admin-ui');
+            if (ui) ui.style.display = 'none';
+        }
+
+        function toggleAdminPanel() {
+            if (adminOpen) closeAdminPanel();
+            else openAdminPanel();
+        }
+
+        function initAdminPanel() {
+            adminDevEnabled = isDevUser();
+            const ui = document.getElementById('admin-ui');
+            if (!ui) return;
+
+            ui.style.display = 'none';
+
+            if (!adminDevEnabled) return;
+
+            addSystemChat('🛠 Admin panel ready (press F2).');
+            syncHotbarVisibilityForOwnedItems();
+
+            const closeBtn = document.getElementById('admin-close-btn');
+            if (closeBtn) closeBtn.addEventListener('click', closeAdminPanel);
+
+            const coinsBtn = document.getElementById('admin-apply-coins');
+            if (coinsBtn) coinsBtn.addEventListener('click', () => {
+                const v = parseInt(document.getElementById('admin-coin-input')?.value ?? '', 10);
+                if (!Number.isFinite(v) || v < 0) return;
+                coins = v;
+                updateCoinDisplay();
+                addSystemChat(`🪙 Coins set to ${coins}.`);
+            });
+
+            const itemsBtn = document.getElementById('admin-apply-items');
+            if (itemsBtn) itemsBtn.addEventListener('click', () => {
+                inventory.gun = !!document.getElementById('admin-ck-gun')?.checked;
+                inventory.grenade = !!document.getElementById('admin-ck-grenade')?.checked;
+                inventory.speedBoost = !!document.getElementById('admin-ck-speedBoost')?.checked;
+                inventory.biggerBoom = !!document.getElementById('admin-ck-biggerBoom')?.checked;
+                inventory.heavyGrenades = !!document.getElementById('admin-ck-heavyGrenades')?.checked;
+                syncHotbarVisibilityForOwnedItems();
+                addSystemChat('✅ Perks applied.');
+            });
+
+            const spawnBtn = document.getElementById('admin-spawn-npcs');
+            if (spawnBtn) spawnBtn.addEventListener('click', () => {
+                if (!gameActive || isDead) return;
+                summonNpcs(false, null);
+            });
+
+            const boomBtn = document.getElementById('admin-test-boom');
+            if (boomBtn) boomBtn.addEventListener('click', () => {
+                if (!localAvatar) return;
+                const p = localAvatar.group.position.clone();
+                p.y = getGroundHeight(p.x, p.z) + 0.1;
+                spawnExplosionFx(p, inventory.biggerBoom ? 1.35 : 1.0);
+                playExplosionSound();
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (!adminDevEnabled) return;
+                if (e.code === 'F2') {
+                    e.preventDefault();
+                    toggleAdminPanel();
+                }
+            });
         }
 
         /* ─────────────────────────────────────────────
@@ -2745,7 +2909,7 @@
         }
 
         function handleFire() {
-            if (!gameActive || isPaused || chatFocused || isDead || shopOpen) return;
+            if (!gameActive || isPaused || chatFocused || isDead || shopOpen || adminOpen) return;
             if (localAvatar.equipped && localAvatar.actionTimer <= 0) {
                 if (localAvatar.equipped === 'gun') {
                     fireBullet();
@@ -2764,7 +2928,7 @@
         }
 
         window.addEventListener('keydown', (e) => {
-            if (!gameActive || isPaused || chatFocused || isDead) return;
+            if (!gameActive || isPaused || chatFocused || isDead || adminOpen) return;
             if (e.key === '1') { equipItem(1); return; }
             if (e.key === '2' && inventory.gun) { equipItem(2); return; }
             if (e.key === '3' && inventory.grenade) { equipItem(3); return; }
@@ -2860,7 +3024,7 @@
         document.getElementById('resume-btn').addEventListener('click', togglePause);
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && gameActive && !isDead && !chatFocused) {
+            if (e.key === 'Escape' && gameActive && !isDead && !chatFocused && !adminOpen) {
                 if (shopOpen) { closeShop(); return; }
                 togglePause();
             }
@@ -2871,7 +3035,7 @@
         let camDist = 12, camYaw = 0, camPitch = 0, smoothCamDist = 12;
 
         window.addEventListener('keydown', (e) => {
-            if (isPaused || !gameActive || isDead || chatFocused || shopOpen) return;
+            if (isPaused || !gameActive || isDead || chatFocused || shopOpen || adminOpen) return;
             const k = e.key.toLowerCase();
             if (keys.hasOwnProperty(k)) keys[k] = true;
             if (e.code === 'Space') {
@@ -2888,7 +3052,7 @@
         });
 
         window.addEventListener('wheel', (e) => {
-            if (!gameActive || isPaused || chatFocused || shopOpen || fpsMode) return;
+            if (!gameActive || isPaused || chatFocused || shopOpen || fpsMode || adminOpen) return;
             camDist += e.deltaY * 0.01;
             camDist = Math.max(2, Math.min(40, camDist));
         });
@@ -2896,7 +3060,7 @@
         document.addEventListener('contextmenu', e => e.preventDefault());
 
         document.addEventListener('mousedown', (e) => {
-            if (e.button === 2 && !shiftLock && !actionMode && gameActive && !isPaused && !chatFocused && !shopOpen && !isMobile) {
+            if (e.button === 2 && !shiftLock && !actionMode && gameActive && !isPaused && !chatFocused && !shopOpen && !isMobile && !adminOpen) {
                 rightClickDown = true;
                 document.body.requestPointerLock();
             }
