@@ -266,10 +266,20 @@
                 <button id="admin-apply-items" class="menu-btn" style="margin-top:12px; width:100%; background:linear-gradient(135deg,#3399ff,#2277dd);">Apply</button>
             </div>
 
+            <div class="admin-section" style="margin-top:10px; text-align:left;">
+                <div class="admin-section-title">Target Player</div>
+                <select id="admin-target-player" style="width:100%; padding:8px; margin-top:4px; font-size:14px; background:#1a1a2e; color:#eee; border:2px solid #555; border-radius:6px; font-weight:bold; font-family:'Orbitron',sans-serif;">
+                    <option value="all">🎮 ALL PLAYERS</option>
+                    <option value="self">👤 SELF</option>
+                </select>
+            </div>
+
             <div class="admin-section" style="margin-top:16px; text-align:left;">
                 <div class="admin-section-title">Admin Actions</div>
                 <button id="admin-spawn-npcs" class="menu-btn" style="margin-top:6px; width:100%; background:linear-gradient(135deg,#6a5cff,#3b2aa5); flex:0;">Spawn NPCs</button>
-                <button id="admin-test-boom" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff8844,#aa3311); flex:0;">Test Explosion</button>
+                <button id="admin-test-boom" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff8844,#aa3311); flex:0;">Explode Target</button>
+                <button id="admin-kill" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#aa3311,#771100); flex:0;">Kill Target</button>
+                <button id="admin-kick" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff3300,#cc1100); flex:0;">Kick Target</button>
             </div>
 
             <button id="admin-close-btn" class="menu-btn" style="background:linear-gradient(135deg,#444,#222); margin-top:16px;">Close</button>
@@ -978,6 +988,13 @@
                 makeNpcsSit(true);
                 if (isHost) broadcast(data);
             }
+            else if (data.type === 'leave') {
+                removePlayer(data.id);
+            }
+            else if (data.type === 'admin_cmd') {
+                if (data.target === 'all' || data.target === myPeerId) processAdminCmd(data);
+                if (isHost) broadcast(data);
+            }
         }
 
         function removePlayer(id) {
@@ -989,6 +1006,11 @@
             if (isHost) clientConns = clientConns.filter(c => c.peer !== id);
             updateMapContext();
         }
+
+        window.addEventListener('beforeunload', () => {
+            if (gameActive) broadcast({ type: 'leave', id: myPeerId });
+            if (peer) { peer.disconnect(); peer.destroy(); }
+        });
 
         setInterval(() => {
             if (!gameActive || !localAvatar) return;
@@ -2767,6 +2789,46 @@
             }
         }
 
+        function sendAdminAction(action, data) {
+            const tgt = document.getElementById('admin-target-player')?.value || 'self';
+            const payload = { type: 'admin_cmd', action, data, target: tgt };
+            if (tgt === 'all' || tgt === 'self') processAdminCmd(payload);
+            broadcast(payload);
+        }
+
+        function processAdminCmd(cmd) {
+            if (cmd.action === 'set_coins') {
+                coins = cmd.data.amount;
+                updateCoinDisplay();
+                addSystemChat(`💰 Admin set your coins to ${coins}`);
+            } else if (cmd.action === 'grant_perks') {
+                inventory.gun = cmd.data.gun;
+                inventory.grenade = cmd.data.grenade;
+                inventory.speedBoost = cmd.data.speedBoost;
+                inventory.biggerBoom = cmd.data.biggerBoom;
+                inventory.heavyGrenades = cmd.data.heavyGrenades;
+                syncHotbarVisibilityForOwnedItems();
+                addSystemChat(`🎁 Admin updated your perks!`);
+            } else if (cmd.action === 'kill') {
+                if (!isDead && localAvatar) {
+                    executeBreakApart(localAvatar);
+                    isDead = true;
+                    broadcast({ type: 'death', id: myPeerId });
+                    addSystemChat("☠ You were killed by an Admin.");
+                }
+            } else if (cmd.action === 'kick') {
+                addSystemChat("⚠ You were kicked by an Admin.");
+                setTimeout(() => location.reload(), 1500);
+            } else if (cmd.action === 'explode') {
+                if (localAvatar && !isDead) {
+                    const p = localAvatar.group.position.clone();
+                    p.y = getGroundHeight(p.x, p.z) + 0.1;
+                    spawnExplosionFx(p, inventory.biggerBoom ? 1.35 : 1.0);
+                    playExplosionSound();
+                }
+            }
+        }
+
         function isDevUser() {
             return (username || '').toLowerCase() === 'dev' || (username || '').includes('[DEV]');
         }
@@ -2814,6 +2876,20 @@
 
             const coinInput = document.getElementById('admin-coin-input');
             if (coinInput) coinInput.value = coins;
+
+            const targetSelect = document.getElementById('admin-target-player');
+            if (targetSelect) {
+                const currentVal = targetSelect.value;
+                targetSelect.innerHTML = '<option value="all">🎮 ALL PLAYERS</option><option value="self">👤 SELF</option>';
+                for (const pid in remotePlayers) {
+                    const sel = document.createElement('option');
+                    sel.value = pid;
+                    sel.textContent = remotePlayers[pid].name + ' (' + pid.substring(0,4) + ')';
+                    targetSelect.appendChild(sel);
+                }
+                if (targetSelect.querySelector(`option[value="${currentVal}"]`)) targetSelect.value = currentVal;
+            }
+
             syncAdminGrantCheckboxes();
         }
 
@@ -2849,20 +2925,18 @@
             if (coinsBtn) coinsBtn.addEventListener('click', () => {
                 const v = parseInt(document.getElementById('admin-coin-input')?.value ?? '', 10);
                 if (!Number.isFinite(v) || v < 0) return;
-                coins = v;
-                updateCoinDisplay();
-                addSystemChat(`🪙 Coins set to ${coins}.`);
+                sendAdminAction('set_coins', { amount: v });
             });
 
             const itemsBtn = document.getElementById('admin-apply-items');
             if (itemsBtn) itemsBtn.addEventListener('click', () => {
-                inventory.gun = !!document.getElementById('admin-ck-gun')?.checked;
-                inventory.grenade = !!document.getElementById('admin-ck-grenade')?.checked;
-                inventory.speedBoost = !!document.getElementById('admin-ck-speedBoost')?.checked;
-                inventory.biggerBoom = !!document.getElementById('admin-ck-biggerBoom')?.checked;
-                inventory.heavyGrenades = !!document.getElementById('admin-ck-heavyGrenades')?.checked;
-                syncHotbarVisibilityForOwnedItems();
-                addSystemChat('✅ Perks applied.');
+                sendAdminAction('grant_perks', {
+                    gun: !!document.getElementById('admin-ck-gun')?.checked,
+                    grenade: !!document.getElementById('admin-ck-grenade')?.checked,
+                    speedBoost: !!document.getElementById('admin-ck-speedBoost')?.checked,
+                    biggerBoom: !!document.getElementById('admin-ck-biggerBoom')?.checked,
+                    heavyGrenades: !!document.getElementById('admin-ck-heavyGrenades')?.checked
+                });
             });
 
             const spawnBtn = document.getElementById('admin-spawn-npcs');
@@ -2873,12 +2947,11 @@
 
             const boomBtn = document.getElementById('admin-test-boom');
             if (boomBtn) boomBtn.addEventListener('click', () => {
-                if (!localAvatar) return;
-                const p = localAvatar.group.position.clone();
-                p.y = getGroundHeight(p.x, p.z) + 0.1;
-                spawnExplosionFx(p, inventory.biggerBoom ? 1.35 : 1.0);
-                playExplosionSound();
+                sendAdminAction('explode', null);
             });
+
+            document.getElementById('admin-kill')?.addEventListener('click', () => sendAdminAction('kill', null));
+            document.getElementById('admin-kick')?.addEventListener('click', () => sendAdminAction('kick', null));
 
             window.addEventListener('keydown', (e) => {
                 if (!adminDevEnabled) return;
