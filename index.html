@@ -601,17 +601,83 @@
         }
         function playExplosionSound() {
             snd(() => {
-                const bs = Math.floor(audioCtx.sampleRate * 0.5);
+                const now = audioCtx.currentTime;
+                const duration = PERF.mobileLowPower ? 0.42 : 0.55;
+
+                // Muffle the harsh part: lowpass + small highpass for "thump".
+                const hp = audioCtx.createBiquadFilter();
+                hp.type = 'highpass';
+                hp.frequency.value = 20;
+
+                const lp = audioCtx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = PERF.mobileLowPower ? 135 : 165;
+
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.28, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+                const outGain = audioCtx.createGain();
+                outGain.gain.setValueAtTime(0.65, now);
+                outGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+                const comp = audioCtx.createDynamicsCompressor();
+                comp.threshold.value = -28;
+                comp.knee.value = 30;
+                comp.ratio.value = 10;
+                comp.attack.value = 0.005;
+                comp.release.value = 0.18;
+
+                comp.connect(outGain);
+                outGain.connect(audioCtx.destination);
+
+                const bs = Math.floor(audioCtx.sampleRate * duration);
                 const buf = audioCtx.createBuffer(1, bs, audioCtx.sampleRate);
                 const d = buf.getChannelData(0);
-                for (let i = 0; i < bs; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bs * 0.08));
+                const decay = duration * 0.65;
+                for (let i = 0; i < bs; i++) {
+                    // Low, "muddy" noise tail (less bright than the old version).
+                    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bs * 0.20));
+                }
                 const n = audioCtx.createBufferSource();
                 n.buffer = buf;
-                const g = audioCtx.createGain();
-                n.connect(g); g.connect(audioCtx.destination);
-                g.gain.setValueAtTime(2, audioCtx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-                n.start();
+                n.connect(hp);
+                hp.connect(lp);
+                lp.connect(noiseGain);
+                noiseGain.connect(comp);
+
+                // Main sub "boom" (simple sine sweep).
+                const boom = audioCtx.createOscillator();
+                boom.type = 'sine';
+                boom.frequency.setValueAtTime(86, now);
+                boom.frequency.exponentialRampToValueAtTime(46, now + 0.26);
+
+                const boomGain = audioCtx.createGain();
+                boomGain.gain.setValueAtTime(0.55, now);
+                boomGain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+
+                boom.connect(boomGain);
+                boomGain.connect(comp);
+
+                // Optional slightly brighter "crack" but still filtered (kept quieter to protect ears).
+                const crack = audioCtx.createOscillator();
+                crack.type = 'triangle';
+                crack.frequency.setValueAtTime(58, now);
+                crack.frequency.exponentialRampToValueAtTime(34, now + 0.14);
+
+                const crackGain = audioCtx.createGain();
+                crackGain.gain.setValueAtTime(0.16, now);
+                crackGain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+
+                crack.connect(crackGain);
+                crackGain.connect(comp);
+
+                n.start(now);
+                n.stop(now + duration);
+                boom.start(now);
+                boom.stop(now + 0.33);
+                crack.start(now);
+                crack.stop(now + 0.22);
             });
         }
         function playSummonSound() {
@@ -655,11 +721,22 @@
         let joystickActive = false, joystickTouchId = null, lookTouchId = null, lastLookX = 0, lastLookY = 0;
 
         let coins = 100;
-        const inventory = { whipOrCake: true, gun: false, grenade: false, speedBoost: false, shield: false };
+        const inventory = {
+            whipOrCake: true,
+            gun: false,
+            grenade: false,
+            speedBoost: false,
+            shield: false,
+            // Added: shop perks that affect grenade/boom feel.
+            biggerBoom: false,
+            heavyGrenades: false
+        };
 
         const SHOP_ITEMS = [
             { id: 'gun', name: 'M9 PISTOL', icon: '🔫', desc: 'Semi-auto sidearm. Enables Action Mode.', price: 0, slot: 2 },
             { id: 'grenade', name: 'FRAG GRENADE', icon: '💣', desc: 'Throwable explosive. Press 3 to equip.', price: 25, slot: 3 },
+            { id: 'biggerBoom', name: 'BIG BOOM', icon: '💥', desc: 'More particles and a beefier blast visual.', price: 60, slot: -1 },
+            { id: 'heavyGrenades', name: 'HEAVY GRENADES', icon: '🧨', desc: 'Grenades fall a bit faster for tighter arcs.', price: 55, slot: -1 },
             { id: 'speedBoost', name: 'ENERGY DRINK', icon: '⚡', desc: 'Permanent +20% move speed.', price: 40, slot: -1 },
             { id: 'shield', name: 'BODY ARMOR', icon: '🛡️', desc: 'Stylish tactical vest. Looks cool.', price: 30, slot: -1 },
         ];
@@ -2354,14 +2431,73 @@
         /* ─────────────────────────────────────────────
            GRENADES / EXPLOSIONS
            ───────────────────────────────────────────── */
-        function spawnExplosionFx(pos) {
-            const geo = new THREE.SphereGeometry(0.15, 10, 10);
-            const mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 1 });
-            const sp = new THREE.Mesh(geo, mat);
-            sp.position.copy(pos);
-            scene.add(sp);
+        function spawnExplosionFx(pos, strengthOverride = null) {
+            const strength = (strengthOverride !== null && strengthOverride !== undefined)
+                ? Number(strengthOverride)
+                : (inventory.biggerBoom ? 1.35 : 1.0);
+            const visualScale = 10; // user requested: explosion is 10x bigger
+            const maxLife = PERF.mobileLowPower ? 0.62 : 0.55;
 
-            explosions.push({ mesh: sp, life: PERF.mobileLowPower ? 0.55 : 0.45, maxLife: PERF.mobileLowPower ? 0.55 : 0.45 });
+            const group = new THREE.Group();
+            group.position.copy(pos);
+            scene.add(group);
+
+            const coreGeo = new THREE.SphereGeometry(0.16 * strength * visualScale, 14, 14);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 1 });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            group.add(core);
+
+            const particles = [];
+            const fireCount = Math.floor((PERF.mobileLowPower ? 16 : 26) * strength);
+            const smokeCount = Math.floor((PERF.mobileLowPower ? 8 : 14) * strength);
+
+            const fireColors = [0xffdd55, 0xffaa33, 0xff5522, 0xff8844];
+            const smokeColors = [0x999999, 0x777777, 0xaaaaaa, 0x666666];
+
+            const spawnParticle = (kind) => {
+                const c = kind === 'fire'
+                    ? fireColors[Math.floor(Math.random() * fireColors.length)]
+                    : smokeColors[Math.floor(Math.random() * smokeColors.length)];
+
+                const size = kind === 'fire'
+                    ? (0.045 + Math.random() * 0.06) * strength * visualScale
+                    : (0.08 + Math.random() * 0.12) * strength * visualScale;
+
+                const geo = new THREE.SphereGeometry(size, 7, 7);
+                const mat = new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 1 });
+                const m = new THREE.Mesh(geo, mat);
+                group.add(m);
+
+                // Random direction with a little upward bias for fire.
+                let dir = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.15, Math.random() - 0.5);
+                if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
+                dir.normalize();
+
+                const speed = kind === 'fire'
+                    ? (3.5 + Math.random() * 4.5) * strength * visualScale
+                    : (1.2 + Math.random() * 2.2) * strength * visualScale;
+
+                const vel = dir.multiplyScalar(speed);
+                vel.y += kind === 'fire' ? (1.0 + Math.random() * 1.0) * strength : 0.4 * strength;
+
+                const pLife = kind === 'fire'
+                    ? maxLife * (0.35 + Math.random() * 0.55)
+                    : maxLife * (0.75 + Math.random() * 0.65);
+
+                particles.push({
+                    mesh: m,
+                    baseSize: size,
+                    vel,
+                    life: pLife,
+                    maxLife: pLife,
+                    kind
+                });
+            };
+
+            for (let i = 0; i < fireCount; i++) spawnParticle('fire');
+            for (let i = 0; i < smokeCount; i++) spawnParticle('smoke');
+
+            explosions.push({ group, core, particles, life: maxLife, maxLife, strength });
         }
 
         function spawnGrenade(grenadeData) {
@@ -2370,6 +2506,8 @@
             const o = new THREE.Vector3().fromArray(grenadeData.origin);
             const v = new THREE.Vector3().fromArray(grenadeData.velocity);
             const fuse = Number(grenadeData.fuse ?? 2.4);
+            const gravity = Number(grenadeData.gravity ?? (inventory.heavyGrenades ? 22 : 18));
+            const boomStrength = grenadeData.boomStrength ?? (inventory.biggerBoom ? 1.35 : 1.0);
 
             const geo = new THREE.SphereGeometry(0.18, 12, 12);
             const mat = new THREE.MeshStandardMaterial({
@@ -2389,7 +2527,9 @@
                 mesh: gm,
                 vel: v,
                 life: fuse,
-                maxLife: fuse
+                maxLife: fuse,
+                gravity,
+                boomStrength
             });
         }
 
@@ -2427,7 +2567,9 @@
                 id: Math.random().toString(36).slice(2, 10),
                 origin: origin.toArray(),
                 velocity: vel.toArray(),
-                fuse: PERF.mobileLowPower ? 2.8 : 2.4
+                fuse: PERF.mobileLowPower ? 2.8 : 2.4,
+                gravity: inventory.heavyGrenades ? 22 : 18,
+                boomStrength: inventory.biggerBoom ? 1.35 : 1.0
             };
         }
 
@@ -2437,7 +2579,7 @@
                 g.life -= dt;
 
                 // Gravity.
-                g.vel.y -= 9.8 * dt;
+                g.vel.y -= (g.gravity ?? (inventory.heavyGrenades ? 22 : 18)) * dt;
                 g.mesh.position.addScaledVector(g.vel, dt);
                 g.mesh.rotation.x += dt * 6;
                 g.mesh.rotation.z += dt * 6;
@@ -2451,7 +2593,7 @@
                     scene.remove(g.mesh);
                     grenades.splice(i, 1);
 
-                    spawnExplosionFx(exPos);
+                    spawnExplosionFx(exPos, g.boomStrength);
                     playExplosionSound();
                 }
             }
@@ -2461,14 +2603,40 @@
             for (let i = explosions.length - 1; i >= 0; i--) {
                 const e = explosions[i];
                 e.life -= dt;
-                const t = Math.max(0, e.life / e.maxLife);
+                const t = Math.max(0, e.life / e.maxLife); // remaining life
                 const p = 1 - t;
 
-                e.mesh.scale.setScalar(0.25 + p * 2.4);
-                e.mesh.material.opacity = t;
+                e.core.scale.setScalar(0.55 + p * (3.4 * e.strength));
+                e.core.material.opacity = t;
 
-                if (e.life <= 0) {
-                    scene.remove(e.mesh);
+                for (let j = e.particles.length - 1; j >= 0; j--) {
+                    const pr = e.particles[j];
+                    pr.life -= dt;
+                    if (pr.life <= 0) {
+                        pr.mesh.material.opacity = 0;
+                        e.particles.splice(j, 1);
+                        continue;
+                    }
+
+                    const pt = Math.max(0, pr.life / pr.maxLife);
+                    pr.mesh.material.opacity = pt;
+
+                    // Fire expands and cools fast; smoke drifts upward and fades.
+                    if (pr.kind === 'fire') {
+                        pr.vel.multiplyScalar(0.94);
+                        pr.vel.y -= 2.2 * dt;
+                        pr.mesh.scale.setScalar(0.9 + (1 - pt) * 3.2);
+                    } else {
+                        pr.vel.multiplyScalar(0.975);
+                        pr.vel.y -= 0.5 * dt;
+                        pr.mesh.scale.setScalar(0.6 + (1 - pt) * 3.0);
+                    }
+
+                    pr.mesh.position.addScaledVector(pr.vel, dt);
+                }
+
+                if (e.life <= 0 || e.particles.length === 0) {
+                    scene.remove(e.group);
                     explosions.splice(i, 1);
                 }
             }
