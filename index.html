@@ -202,7 +202,7 @@
     </style>
 </head>
 <body>
-   <audio id="bg-music" src="bgm.mp3" loop preload="auto"></audio>
+    <audio id="bg-music" src="bgm.mp3" loop preload="auto"></audio>
 
     <div id="rotate-hint">
         <div class="icon">📱</div>
@@ -848,6 +848,7 @@
         document.getElementById('host-btn').addEventListener('click', () => {
             initAudio();
             username = document.getElementById('username-input').value || "Host";
+            if (localStorage.getItem('R6_DEV_COMP') === 'true' && !username.includes('[DEV]')) username = '[DEV] ' + username;
             maxPlayers = parseInt(document.getElementById('max-players').value) || 4;
             isTrunchbull = (username.toLowerCase() === 'miss_trunchbull');
             showLoading(true, "CREATING LOBBY...");
@@ -876,6 +877,7 @@
         document.getElementById('join-btn').addEventListener('click', () => {
             initAudio();
             username = document.getElementById('username-input').value || "Guest";
+            if (localStorage.getItem('R6_DEV_COMP') === 'true' && !username.includes('[DEV]')) username = '[DEV] ' + username;
             let code = document.getElementById('join-code').value.toUpperCase();
             isTrunchbull = (username.toLowerCase() === 'miss_trunchbull');
             if (code.length !== 5) { showError("Enter valid code."); return; }
@@ -1930,11 +1932,22 @@
             const cx = cv.getContext('2d');
             cx.font = 'bold 48px Rajdhani,Arial';
             cx.textAlign = 'center';
-            cx.strokeStyle = 'black';
-            cx.lineWidth = 6;
-            cx.strokeText(playerName, 256, 80);
-            cx.fillStyle = 'white';
-            cx.fillText(playerName, 256, 80);
+            if (playerName && playerName.includes('[DEV]')) {
+                cx.strokeStyle = '#330044';
+                cx.lineWidth = 8;
+                cx.strokeText(playerName, 256, 80);
+                cx.shadowBlur = 18;
+                cx.shadowColor = '#d900ff';
+                cx.fillStyle = '#ff88ff';
+                cx.fillText(playerName, 256, 80);
+                cx.shadowBlur = 0;
+            } else {
+                cx.strokeStyle = 'black';
+                cx.lineWidth = 6;
+                cx.strokeText(playerName, 256, 80);
+                cx.fillStyle = 'white';
+                cx.fillText(playerName, 256, 80);
+            }
 
             const ns = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv) }));
             ns.scale.set(4, 1, 1);
@@ -2755,7 +2768,7 @@
         }
 
         function isDevUser() {
-            return (username || '').toLowerCase() === 'dev';
+            return (username || '').toLowerCase() === 'dev' || (username || '').includes('[DEV]');
         }
 
         function syncAdminGrantCheckboxes() {
