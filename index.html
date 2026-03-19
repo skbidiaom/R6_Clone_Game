@@ -315,6 +315,19 @@
         <div class="hotbar-slot" id="slot-1"><span>1</span><div id="slot-name">Item</div></div>
         <div class="hotbar-slot" id="slot-2" style="display:none;"><span>2</span>Pistol</div>
         <div class="hotbar-slot" id="slot-3" style="display:none;"><span>3</span>Boom</div>
+        <div class="hotbar-slot" id="slot-4" style="display:none; border-color:#d900ff; box-shadow:0 0 10px #d900ff;"><span>4</span>VXTOOL</div>
+    </div>
+
+    <div id="vx-ui" style="display:none; position:absolute; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); border:2px solid #ff0; padding:12px; color:#fff; border-radius:8px; z-index:50;">
+        <h3 style="margin:0 0 8px 0; color:#ff0; font-family:'Orbitron',sans-serif; font-size:14px; text-align:center;">VX TOOLS</h3>
+        <div style="display:flex; justify-content:center; gap:6px; margin-bottom:6px;">
+            <input type="number" id="vx-w" value="2" step="0.5" style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;" title="Width"> 
+            <input type="number" id="vx-h" value="2" step="0.5" style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;" title="Height"> 
+            <input type="number" id="vx-d" value="2" step="0.5" style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;" title="Depth">
+        </div>
+        <input type="color" id="vx-col" value="#d900ff" style="width:100%; height:24px; margin-bottom:6px; border:none; background:none;">
+        <label style="font-size:12px; display:block; text-align:center; font-weight:bold;"><input type="checkbox" id="vx-move"> Moving Parts</label>
+        <button id="vx-clear" style="margin-top:8px; width:100%; background:#a33; color:#fff; border:1px solid #ff4444; padding:6px; font-weight:bold; cursor:pointer;">Clear Generated Objects</button>
     </div>
 
     <div id="mode-indicator" class="normal">Normal Mode</div>
@@ -341,6 +354,7 @@
         <div id="btn-slot1" class="mobile-btn">1</div>
         <div id="btn-slot2" class="mobile-btn">2</div>
         <div id="btn-slot3" class="mobile-btn">3</div>
+        <div id="btn-slot4" class="mobile-btn" style="bottom: 305px; right: 85px; width: 48px; height: 48px; font-size: 12px; background: rgba(200,0,255,0.3); border: 2px solid rgba(255,0,255,0.4); display: none;">4</div>
 
         <div id="btn-pause" class="mobile-btn">⏸</div>
         <div id="btn-chat" class="mobile-btn">💬</div>
@@ -993,6 +1007,15 @@
             }
             else if (data.type === 'admin_cmd') {
                 if (data.target === 'all' || data.target === myPeerId) processAdminCmd(data);
+                if (isHost) broadcast(data);
+            }
+            else if (data.type === 'sync_obj') {
+                spawnDynamicObject(data.data);
+                if (isHost) broadcast(data);
+            }
+            else if (data.type === 'clear_objs') {
+                for (let k in dynamicObjects) scene.remove(dynamicObjects[k].mesh);
+                for (let k in dynamicObjects) delete dynamicObjects[k];
                 if (isHost) broadcast(data);
             }
         }
@@ -1886,6 +1909,40 @@
             return g;
         }
 
+        const dynamicObjects = {};
+
+        function spawnDynamicObject(data) {
+            if (dynamicObjects[data.id]) return;
+            const geo = new THREE.BoxGeometry(data.w, data.h, data.d);
+            const mat = new THREE.MeshStandardMaterial({ color: data.col, roughness: 0.3, metalness: 0.4 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.fromArray(data.pos);
+            if (data.rot) mesh.rotation.fromArray(data.rot);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            dynamicObjects[data.id] = { mesh, data };
+        }
+
+        function updateDynamicObjects(t, dt) {
+            for (let id in dynamicObjects) {
+                const o = dynamicObjects[id];
+                if (o.data.move) {
+                    o.mesh.rotation.y += dt * 2.0;
+                    o.mesh.rotation.x += dt * 0.8;
+                    o.mesh.position.y += Math.sin(t * 3 + o.mesh.position.x) * dt * 1.5;
+                }
+            }
+        }
+
+        function createVXTool() {
+            const g = new THREE.Group();
+            const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
+            box.position.set(0, -0.8, 0);
+            g.add(box);
+            return g;
+        }
+
         function buildAvatar(playerName, customShirtColor, customPantColor) {
             const isT = (playerName && playerName.toLowerCase() === 'miss_trunchbull');
 
@@ -1984,11 +2041,12 @@
             const iC = createCake(); iC.visible = false; eq.add(iC);
             const iG = createGun(); iG.visible = false; eq.add(iG);
             const iGr = createGrenade(); iGr.visible = false; eq.add(iGr);
+            const iVX = createVXTool(); iVX.visible = false; eq.add(iVX);
 
             return {
                 group, torso, leftArm: lA, rightArm: rA, leftLeg: lL, rightLeg: rL, headGroup: hG,
                 nametagSprite: ns, explosionData: null, equipped: null,
-                itemWhip: iW, itemCake: iC, itemGun: iG, itemGrenade: iGr,
+                itemWhip: iW, itemCake: iC, itemGun: iG, itemGrenade: iGr, itemVX: iVX,
                 actionTimer: 0, isTrunchbull: isT
             };
         }
@@ -2081,6 +2139,7 @@
             if (av.itemCake) av.itemCake.visible = (en === 'cake');
             if (av.itemGun) av.itemGun.visible = (en === 'gun');
             if (av.itemGrenade) av.itemGrenade.visible = (en === 'grenade');
+            if (av.itemVX) av.itemVX.visible = (en === 'vxtool');
 
             if (av === localAvatar) {
                 const wasAction = actionMode;
@@ -2862,6 +2921,13 @@
             const showGrenade = !!inventory.grenade;
             if (slot3) slot3.style.display = showGrenade ? 'flex' : 'none';
             if (btn3) btn3.style.display = showGrenade ? 'flex' : 'none';
+
+            // VX Tools (slot 4)
+            const slot4 = document.getElementById('slot-4');
+            const btn4 = document.getElementById('btn-slot4');
+            const showVx = !!isDevUser();
+            if (slot4) slot4.style.display = showVx ? 'flex' : 'none';
+            if (btn4) btn4.style.display = showVx ? 'flex' : 'none';
         }
 
         function openAdminPanel() {
@@ -2921,6 +2987,14 @@
             const closeBtn = document.getElementById('admin-close-btn');
             if (closeBtn) closeBtn.addEventListener('click', closeAdminPanel);
 
+            const vxClear = document.getElementById('vx-clear');
+            if (vxClear) vxClear.addEventListener('click', () => {
+                for (let k in dynamicObjects) scene.remove(dynamicObjects[k].mesh);
+                for (let k in dynamicObjects) delete dynamicObjects[k];
+                broadcast({ type: 'clear_objs' });
+                addSystemChat("✅ Cleared Network Objects");
+            });
+
             const coinsBtn = document.getElementById('admin-apply-coins');
             if (coinsBtn) coinsBtn.addEventListener('click', () => {
                 const v = parseInt(document.getElementById('admin-coin-input')?.value ?? '', 10);
@@ -2971,6 +3045,7 @@
             if (slot === 1) target = isTrunchbull ? 'whip' : 'cake';
             else if (slot === 2 && inventory.gun) target = 'gun';
             else if (slot === 3 && inventory.grenade) target = 'grenade';
+            else if (slot === 4 && isDevUser()) target = 'vxtool';
             if (!target) return;
 
             if (localAvatar.equipped === target) {
@@ -2978,6 +3053,7 @@
                 playUnequipSound();
                 document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('active'));
                 document.querySelectorAll('.mobile-btn').forEach(s => s.classList.remove('active-slot'));
+                const vu = document.getElementById('vx-ui'); if (vu) vu.style.display = 'none';
             } else {
                 setAvatarEquip(localAvatar, target);
                 playEquipSound();
@@ -2987,6 +3063,7 @@
                 if (hs) hs.classList.add('active');
                 const mb = document.getElementById('btn-slot' + slot);
                 if (mb) mb.classList.add('active-slot');
+                const vu = document.getElementById('vx-ui'); if (vu) vu.style.display = target === 'vxtool' ? 'block' : 'none';
             }
         }
 
@@ -3036,6 +3113,26 @@
                     const grenadeData = createGrenadeThrowData();
                     spawnGrenade(grenadeData);
                     broadcast({ type: 'action', id: myPeerId, action: 'grenade', grenade: grenadeData });
+                } else if (localAvatar.equipped === 'vxtool' && playerState !== STATE.SIT) {
+                    localAvatar.actionTimer = 0.5;
+                    const w = parseFloat(document.getElementById('vx-w').value) || 2;
+                    const h = parseFloat(document.getElementById('vx-h').value) || 2;
+                    const d = parseFloat(document.getElementById('vx-d').value) || 2;
+                    const col = document.getElementById('vx-col').value;
+                    const move = document.getElementById('vx-move').checked;
+                    
+                    let fd = fpsMode ? new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize() : getPlayerForwardDir();
+                    const origin = localAvatar.group.position.clone().add(new THREE.Vector3(0, 2, 0)).addScaledVector(fd, 4 + Math.max(w,d)/2);
+
+                    const packet = {
+                        id: Math.random().toString(36).substring(2, 10),
+                        w, h, d, col, move,
+                        pos: origin.toArray(),
+                        rot: [0, camYaw, 0]
+                    };
+                    spawnDynamicObject(packet);
+                    broadcast({ type: 'sync_obj', data: packet });
+                    playBuySound();
                 } else if (playerState !== STATE.SIT) {
                     localAvatar.actionTimer = 0.5;
                     broadcast({ type: 'action', id: myPeerId, action: localAvatar.equipped });
@@ -3050,6 +3147,7 @@
             if (e.key === '1') { equipItem(1); return; }
             if (e.key === '2' && inventory.gun) { equipItem(2); return; }
             if (e.key === '3' && inventory.grenade) { equipItem(3); return; }
+            if (e.key === '4' && isDevUser()) { equipItem(4); return; }
             if (e.key.toLowerCase() === 'o') { toggleFpsMode(); return; }
             if (e.key.toLowerCase() === 'e') { handleInteract(); return; }
             if (e.key.toLowerCase() === 'g') { summonNpcs(false, null); return; }
@@ -3796,6 +3894,7 @@
             updateBullets(dt);
             updateGrenades(dt);
             updateExplosions(dt);
+            updateDynamicObjects(t, dt);
             updateShopProximity();
             updateSpeechBubbles(dt);
             updateNpcs(dt);
