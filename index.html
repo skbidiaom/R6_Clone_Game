@@ -688,56 +688,67 @@
             occupiedChairs.clear();
         }
 
-        function summonNpcs() {
-            if (currentMap !== 'hall') { addSystemChat("❌ NPCs only spawn in the hall."); return; }
-            if (npcsSpawned) { addSystemChat("❌ NPCs already spawned. Reset to respawn."); return; }
-            playSummonSound();
-            npcsSpawned = true;
+       function summonNpcs(fromNetwork, networkData) {
+    if (currentMap !== 'hall') { if (!fromNetwork) addSystemChat("❌ NPCs only spawn in the hall."); return; }
+    if (npcsSpawned) { if (!fromNetwork) addSystemChat("❌ NPCs already spawned."); return; }
+    playSummonSound();
+    npcsSpawned = true;
 
-            // Find which chairs the local player is near (don't spawn NPCs on player's chair)
-            const playerChairIdx = findNearestChairIndex(localAvatar.group.position, 3);
+    const playerChairIdx = fromNetwork ? -1 : findNearestChairIndex(localAvatar.group.position, 3);
 
-            const availableChairs = [];
-            for (let i = 0; i < window.chairPositions.length; i++) {
-                if (i === playerChairIdx) continue;
-                availableChairs.push(i);
-            }
+    let spawnData = [];
 
-            // Shuffle and pick
-            for (let i = availableChairs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [availableChairs[i], availableChairs[j]] = [availableChairs[j], availableChairs[i]]; }
-
-            const count = Math.min(availableChairs.length, 80 + Math.floor(Math.random() * 40));
-            const usedNames = new Set();
-
-            for (let n = 0; n < count; n++) {
-                const chairIdx = availableChairs[n];
-                const pos = window.chairPositions[chairIdx];
-                const shirtCol = NPC_SHIRT_COLORS[Math.floor(Math.random() * NPC_SHIRT_COLORS.length)];
-                const pantCol = NPC_PANT_COLORS[Math.floor(Math.random() * NPC_PANT_COLORS.length)];
-                let name = NPC_NAMES[Math.floor(Math.random() * NPC_NAMES.length)];
-                if (usedNames.has(name)) name = name + Math.floor(Math.random() * 99);
-                usedNames.add(name);
-
-                const av = buildAvatar(name, shirtCol, pantCol);
-                av.group.position.set(pos.x, 0, pos.z + 2); // Start standing behind chair
-                av.group.rotation.y = Math.PI;
-                scene.add(av.group);
-                npcAvatars.push({ avatar: av, chairIdx, state: 'standing', targetPos: pos.clone() });
-                occupiedChairs.add(chairIdx);
-            }
-
-            addSystemChat(`👤 ${count} students summoned! Type "Sit!" as miss_trunchbull to make them sit.`);
+    if (fromNetwork && networkData) {
+        spawnData = networkData;
+    } else {
+        const availableChairs = [];
+        for (let i = 0; i < window.chairPositions.length; i++) {
+            if (i === playerChairIdx) continue;
+            availableChairs.push(i);
         }
-
-        function makeNpcsSit() {
-            if (!npcsSpawned || npcsAreSitting) return;
-            npcsAreSitting = true;
-            addSystemChat("📢 All students are sitting down!");
-            npcAvatars.forEach(npc => {
-                npc.state = 'sitting';
-            });
+        for (let i = availableChairs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [availableChairs[i], availableChairs[j]] = [availableChairs[j], availableChairs[i]];
         }
+        const count = Math.min(availableChairs.length, 80 + Math.floor(Math.random() * 40));
+        const usedNames = new Set();
+        for (let n = 0; n < count; n++) {
+            const chairIdx = availableChairs[n];
+            const shirtCol = NPC_SHIRT_COLORS[Math.floor(Math.random() * NPC_SHIRT_COLORS.length)];
+            const pantCol = NPC_PANT_COLORS[Math.floor(Math.random() * NPC_PANT_COLORS.length)];
+            let name = NPC_NAMES[Math.floor(Math.random() * NPC_NAMES.length)];
+            if (usedNames.has(name)) name = name + Math.floor(Math.random() * 99);
+            usedNames.add(name);
+            spawnData.push({ chairIdx, shirtCol, pantCol, name });
+        }
+        broadcast({ type: 'summon_npcs', id: myPeerId, data: spawnData });
+    }
 
+    for (const sd of spawnData) {
+        const pos = window.chairPositions[sd.chairIdx];
+        if (!pos) continue;
+        const av = buildAvatar(sd.name, sd.shirtCol, sd.pantCol);
+        av.group.position.set(pos.x, 0, pos.z + 2);
+        av.group.rotation.y = Math.PI;
+        scene.add(av.group);
+        npcAvatars.push({ avatar: av, chairIdx: sd.chairIdx, state: 'standing', targetPos: pos.clone() });
+        occupiedChairs.add(sd.chairIdx);
+    }
+
+    addSystemChat(`👤 ${spawnData.length} students summoned!`);
+}
+
+       function makeNpcsSit(fromNetwork) {
+    if (!npcsSpawned || npcsAreSitting) return;
+    npcsAreSitting = true;
+    addSystemChat("📢 All students are sitting down!");
+    npcAvatars.forEach(npc => {
+        npc.state = 'sitting';
+    });
+    if (!fromNetwork) {
+        broadcast({ type: 'npcs_sit', id: myPeerId });
+    }
+}
         function findNearestChairIndex(pos, maxDist) {
             let best = -1, bestD = maxDist;
             for (let i = 0; i < window.chairPositions.length; i++) {
