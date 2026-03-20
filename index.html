@@ -1,208 +1,962 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>HTML 3D R6 Multiplayer Game - Action Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700;900&display=swap"
+        rel="stylesheet">
     <style>
-        * { font-family: 'Rajdhani', sans-serif; box-sizing: border-box; }
-        body { margin: 0; overflow: hidden; background-color: #000; user-select: none; -webkit-user-select: none; touch-action: none; }
-        canvas { display: block; }
+        * {
+            font-family: 'Rajdhani', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #minimap-container {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            z-index: 100;
+            display: none;
+        }
+
+        #minimap-canvas {
+            width: 200px;
+            height: 200px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        #minimap-toggle, #minimap-zoom {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #minimap-toggle {
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #minimap-zoom {
+            bottom: -35px;
+            right: 10px;
+        }
+
+        #minimap-toggle:hover, #minimap-zoom:hover {
+            background: rgba(50, 50, 50, 0.9);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
 
         .overlay-menu {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 100; color: white; backdrop-filter: blur(8px);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: white;
+            backdrop-filter: blur(8px);
         }
-        #pause-menu { display: none; background: rgba(0, 0, 0, 0.6); z-index: 90; }
-        #admin-ui { display: none; background: rgba(0, 0, 0, 0.65); z-index: 95; }
-        #admin-ui .menu-box { max-width: 560px; }
-        .admin-section-title { font-weight: 900; color: #ffd700; letter-spacing: 1px; font-family: 'Orbitron', sans-serif; margin-bottom: 8px; }
-        .admin-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; }
-        .admin-checks label { font-size: 13px; color: #eee; }
+
+        #pause-menu {
+            display: none;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 90;
+        }
+
+        #admin-ui {
+            display: none;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 95;
+        }
+
+        #admin-ui .menu-box {
+            max-width: 560px;
+        }
+
+        .admin-section-title {
+            font-weight: 900;
+            color: #ffd700;
+            letter-spacing: 1px;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 8px;
+        }
+
+        .admin-checks {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 18px;
+        }
+
+        .admin-checks label {
+            font-size: 13px;
+            color: #eee;
+        }
 
         #shop-ui {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.75); display: none; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 80; color: white;
-            backdrop-filter: blur(4px); overflow-y: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 80;
+            color: white;
+            backdrop-filter: blur(4px);
+            overflow-y: auto;
         }
-        #shop-ui .menu-box { max-width: 520px; max-height: 90vh; overflow-y: auto; }
-        #shop-ui h2 { margin-top: 0; font-size: 28px; color: #ffd700; letter-spacing: 2px; font-family: 'Orbitron', sans-serif; }
+
+        #shop-ui .menu-box {
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #shop-ui h2 {
+            margin-top: 0;
+            font-size: 28px;
+            color: #ffd700;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
         .shop-item {
-            display: flex; align-items: center; gap: 14px;
-            background: rgba(255,255,255,0.06); padding: 12px 14px; border-radius: 10px;
-            border: 1px solid #444; margin: 8px 0; width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            margin: 8px 0;
+            width: 100%;
         }
-        .shop-icon { font-size: 34px; min-width: 42px; text-align: center; }
-        .shop-info { flex: 1; text-align: left; }
-        .shop-info .item-name { font-weight: bold; font-size: 16px; font-family: 'Orbitron', sans-serif; }
-        .shop-info .item-desc { color: #aaa; font-size: 12px; margin-top: 2px; }
-        .shop-info .item-price { color: #4dff91; font-weight: bold; font-size: 14px; margin-top: 3px; }
+
+        .shop-icon {
+            font-size: 34px;
+            min-width: 42px;
+            text-align: center;
+        }
+
+        .shop-info {
+            flex: 1;
+            text-align: left;
+        }
+
+        .shop-info .item-name {
+            font-weight: bold;
+            font-size: 16px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .shop-info .item-desc {
+            color: #aaa;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .shop-info .item-price {
+            color: #4dff91;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 3px;
+        }
 
         #shop-hint {
-            position: absolute; bottom: 108px; left: 50%; transform: translateX(-50%);
-            color: white; font-size: 15px; font-weight: bold; text-shadow: 0 0 8px rgba(255,200,0,0.5);
-            display: none; pointer-events: none; z-index: 10;
-            background: rgba(0,0,0,0.75); padding: 7px 18px; border-radius: 20px;
-            border: 1px solid rgba(255,215,0,0.4); white-space: nowrap;
-            font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 1px;
+            position: absolute;
+            bottom: 108px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 200, 0, 0.5);
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 7px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            white-space: nowrap;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            letter-spacing: 1px;
         }
 
         .menu-box {
-            background: rgba(12, 12, 18, 0.97); padding: 30px; border-radius: 14px;
-            border: 2px solid #333; text-align: center; max-width: 420px; width: 90%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05);
+            background: rgba(12, 12, 18, 0.97);
+            padding: 30px;
+            border-radius: 14px;
+            border: 2px solid #333;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
-        .menu-box h1 { margin-top: 0; font-size: 36px; text-shadow: 0 0 20px rgba(51,153,255,0.5); font-family: 'Orbitron', sans-serif; letter-spacing: 3px; }
 
-        input[type="text"], input[type="number"] {
-            width: 85%; padding: 12px; margin: 8px 0; font-size: 18px; border-radius: 8px;
-            border: 2px solid #333; text-align: center; font-weight: bold; background: #1a1a2e; color: #eee;
+        .menu-box h1 {
+            margin-top: 0;
+            font-size: 36px;
+            text-shadow: 0 0 20px rgba(51, 153, 255, 0.5);
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 3px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 85%;
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 18px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            text-align: center;
+            font-weight: bold;
+            background: #1a1a2e;
+            color: #eee;
             transition: border-color 0.3s;
         }
-        input[type="text"]:focus, input[type="number"]:focus { border-color: #3399ff; outline: none; }
-        .row { display: flex; justify-content: space-between; gap: 10px; margin-top: 15px; }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            border-color: #3399ff;
+            outline: none;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 15px;
+        }
 
         .menu-btn {
-            flex: 1; padding: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
-            background: linear-gradient(135deg, #3399ff, #2277dd); color: white; border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; transition: 0.2s;
-            letter-spacing: 1px; text-transform: uppercase;
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #3399ff, #2277dd);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            transition: 0.2s;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
-        .menu-btn:hover { background: linear-gradient(135deg, #2277dd, #1155aa); transform: scale(1.03); }
-        .menu-btn:disabled { background: #333; cursor: default; transform: none; border-color: #444; }
-        .menu-btn.owned-btn { background: #1a3a1a; border-color: #2a5a2a; color: #4dff91; cursor: default; }
 
-        #error-msg { color: #ff5555; font-weight: bold; margin-top: 10px; min-height: 20px; font-family: 'Orbitron', sans-serif; font-size: 12px; }
-        #loading-overlay { display: none; position: absolute; inset:0; background: rgba(0,0,0,0.95); z-index: 110; color: white; font-size: 24px; justify-content: center; align-items: center; font-family: 'Orbitron', sans-serif; letter-spacing: 3px; }
+        .menu-btn:hover {
+            background: linear-gradient(135deg, #2277dd, #1155aa);
+            transform: scale(1.03);
+        }
+
+        .menu-btn:disabled {
+            background: #333;
+            cursor: default;
+            transform: none;
+            border-color: #444;
+        }
+
+        .menu-btn.owned-btn {
+            background: #1a3a1a;
+            border-color: #2a5a2a;
+            color: #4dff91;
+            cursor: default;
+        }
+
+        #error-msg {
+            color: #ff5555;
+            font-weight: bold;
+            margin-top: 10px;
+            min-height: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+        }
+
+        #loading-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 110;
+            color: white;
+            font-size: 24px;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 3px;
+        }
 
         #hud-top {
-            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-            text-align: center; z-index: 10; text-shadow: 0 0 6px rgba(0,0,0,0.8);
-            color: white; font-weight: bold; pointer-events: none;
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+            text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
         }
-        #invite-display { font-size: 14px; margin-bottom: 3px; color: #ffd700; font-family: 'Orbitron', sans-serif; letter-spacing: 2px; }
-        #fps-counter { font-size: 12px; color: #8af; font-family: 'Orbitron', sans-serif; }
-        #coin-display { font-size: 14px; color: #ffd700; font-family: 'Orbitron', sans-serif; margin-top: 4px; }
+
+        #invite-display {
+            font-size: 14px;
+            margin-bottom: 3px;
+            color: #ffd700;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 2px;
+        }
+
+        #fps-counter {
+            font-size: 12px;
+            color: #8af;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        #coin-display {
+            font-size: 14px;
+            color: #ffd700;
+            font-family: 'Orbitron', sans-serif;
+            margin-top: 4px;
+        }
 
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 2px; height: 2px; background-color: rgba(255,80,80,0.9);
-            border-radius: 50%; transform: translate(-50%, -50%); display: none; pointer-events: none; z-index: 10;
-            box-shadow: 0 0 4px rgba(255,0,0,0.6), 0 0 1px white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 2px;
+            background-color: rgba(255, 80, 80, 0.9);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 0 4px rgba(255, 0, 0, 0.6), 0 0 1px white;
         }
-        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255,255,255,0.85); }
-        #crosshair::before { width: 16px; height: 1.5px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        #crosshair::after { width: 1.5px; height: 16px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        #crosshair.action-crosshair { width: 4px; height: 4px; background: rgba(255,50,50,1); box-shadow: 0 0 8px rgba(255,0,0,0.8), 0 0 2px white; }
-        #crosshair.action-crosshair::before { width: 22px; height: 2px; }
-        #crosshair.action-crosshair::after { width: 2px; height: 22px; }
-        #crosshair.fps-crosshair { width: 3px; height: 3px; background: rgba(255,255,255,0.95); box-shadow: 0 0 6px rgba(255,255,255,0.5); }
-        #crosshair.fps-crosshair::before { width: 18px; height: 1px; background: rgba(255,255,255,0.7); }
-        #crosshair.fps-crosshair::after { width: 1px; height: 18px; background: rgba(255,255,255,0.7); }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        #crosshair::before {
+            width: 16px;
+            height: 1.5px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #crosshair::after {
+            width: 1.5px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #crosshair.action-crosshair {
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 50, 50, 1);
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.8), 0 0 2px white;
+        }
+
+        #crosshair.action-crosshair::before {
+            width: 22px;
+            height: 2px;
+        }
+
+        #crosshair.action-crosshair::after {
+            width: 2px;
+            height: 22px;
+        }
+
+        #crosshair.fps-crosshair {
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+        }
+
+        #crosshair.fps-crosshair::before {
+            width: 18px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        #crosshair.fps-crosshair::after {
+            width: 1px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.7);
+        }
 
         #instructions {
-            position: absolute; bottom: 12px; left: 12px; color: rgba(255,255,255,0.85); font-size: 12px;
-            text-shadow: 0 0 4px black; pointer-events: none; z-index: 10; display: none; line-height: 1.6;
-            background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+            position: absolute;
+            top: 120px;
+            left: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 12px;
+            text-shadow: 0 0 4px black;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+            line-height: 1.6;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        #hotbar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: none; gap: 6px; z-index: 10; }
-        .hotbar-slot {
-            width: 52px; height: 52px; background: rgba(10,10,20,0.7); border: 2px solid #444; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px;
-            text-align: center; position: relative; transition: all 0.15s; backdrop-filter: blur(4px);
+        #hud-bottom-left {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
         }
-        .hotbar-slot.active { border-color: #ff6633; background: rgba(80,30,0,0.75); box-shadow: 0 0 12px rgba(255,100,50,0.4); }
-        .hotbar-slot span { position: absolute; top: 2px; left: 5px; color: #888; font-size: 9px; font-family: 'Orbitron', sans-serif; }
+
+        #hotbar {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        .hotbar-slot {
+            width: 52px;
+            height: 52px;
+            background: rgba(10, 10, 20, 0.7);
+            border: 2px solid #444;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            text-align: center;
+            position: relative;
+            transition: all 0.15s;
+            backdrop-filter: blur(4px);
+        }
+
+        .hotbar-slot.active {
+            border-color: #ff6633;
+            background: rgba(80, 30, 0, 0.75);
+            box-shadow: 0 0 12px rgba(255, 100, 50, 0.4);
+        }
+
+        .hotbar-slot span {
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            color: #888;
+            font-size: 9px;
+            font-family: 'Orbitron', sans-serif;
+        }
 
         #mode-indicator {
-            position: absolute; bottom: 74px; left: 50%; transform: translateX(-50%); color: white; font-size: 10px; font-weight: 700;
-            pointer-events: none; z-index: 10; display: none; font-family: 'Orbitron', sans-serif; letter-spacing: 2px;
-            text-transform: uppercase; padding: 3px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+            position: absolute;
+            bottom: 74px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 3px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
-        #mode-indicator.normal { background: rgba(50,120,50,0.6); color: #aaffaa; }
-        #mode-indicator.action { background: rgba(150,40,0,0.7); color: #ff8844; }
-        #mode-indicator.fps { background: rgba(200,0,0,0.7); color: #ff4444; }
+
+        #mode-indicator.normal {
+            background: rgba(50, 120, 50, 0.6);
+            color: #aaffaa;
+        }
+
+        #mode-indicator.action {
+            background: rgba(150, 40, 0, 0.7);
+            color: #ff8844;
+        }
+
+        #mode-indicator.fps {
+            background: rgba(200, 0, 0, 0.7);
+            color: #ff4444;
+        }
 
         #ammo-display {
-            position: absolute; bottom: 20px; right: 18px; z-index: 10; display: none; font-family: 'Orbitron', sans-serif; font-size: 22px;
-            font-weight: 900; color: #ff8844; text-shadow: 0 0 10px rgba(255,100,0,0.5); letter-spacing: 2px;
+            position: absolute;
+            bottom: 20px;
+            right: 18px;
+            z-index: 10;
+            display: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+            color: #ff8844;
+            text-shadow: 0 0 10px rgba(255, 100, 0, 0.5);
+            letter-spacing: 2px;
         }
-        #ammo-display .ammo-label { font-size: 9px; color: #888; letter-spacing: 3px; display: block; }
+
+        #ammo-display .ammo-label {
+            font-size: 9px;
+            color: #888;
+            letter-spacing: 3px;
+            display: block;
+        }
 
         #vignette-overlay {
-            position: absolute; inset: 0; z-index: 5; pointer-events: none; display: none;
-            background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.5) 100%);
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+            display: none;
+            background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.5) 100%);
         }
 
         #chat-container {
-            position: absolute; top: 8px; left: 8px; width: 300px; height: 200px;
-            display: flex; flex-direction: column; justify-content: flex-end; z-index: 15; pointer-events: none; display: none;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 300px;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            z-index: 15;
+            pointer-events: none;
+            display: none;
         }
-        #chat-messages { overflow-y: hidden; display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; text-shadow: 0 0 3px #000, 1px 1px 0 #000; }
-        .chat-line { color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 600; word-wrap: break-word; animation: fadeOut 10s forwards; }
-        .chat-name { color: #88ff88; }
-        .chat-sys { color: #ffdd66; font-style: italic; }
-        #chat-input-wrapper { display: none; background: rgba(0,0,0,0.7); padding: 5px 8px; border-radius: 6px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.1); }
-        #chat-input { width: 100%; background: transparent; border: none; color: white; font-size: 14px; font-weight: bold; outline: none; }
 
-        @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+        #chat-messages {
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-bottom: 6px;
+            text-shadow: 0 0 3px #000, 1px 1px 0 #000;
+        }
+
+        .chat-line {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            font-weight: 600;
+            word-wrap: break-word;
+            animation: fadeOut 10s forwards;
+        }
+
+        .chat-name {
+            color: #88ff88;
+        }
+
+        .chat-sys {
+            color: #ffdd66;
+            font-style: italic;
+        }
+
+        #chat-input-wrapper {
+            display: none;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 8px;
+            border-radius: 6px;
+            pointer-events: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #chat-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            outline: none;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+            }
+
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
 
         /* Mobile controls */
-        #mobile-controls { display: none; position: absolute; inset: 0; pointer-events: none; z-index: 20; }
-        #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; pointer-events: auto; touch-action: none; }
-        #joystick-base { position: absolute; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); left: 5px; top: 5px; }
-        #joystick-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.5), rgba(255,255,255,0.15)); border: 2px solid rgba(255,255,255,0.4); left: 40px; top: 40px; }
-        #look-zone { position: absolute; top: 0; right: 0; width: 45%; height: 70%; pointer-events: auto; touch-action: none; }
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        #joystick-zone {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 140px;
+            height: 140px;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystick-base {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            left: 5px;
+            top: 5px;
+        }
+
+        #joystick-stick {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.15));
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            left: 40px;
+            top: 40px;
+        }
+
+        #look-zone {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 45%;
+            height: 70%;
+            pointer-events: auto;
+            touch-action: none;
+        }
 
         .mobile-btn {
-            position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 700;
-            color: white; text-shadow: 0 0 4px rgba(0,0,0,0.8); transition: transform 0.1s;
+            position: absolute;
+            pointer-events: auto;
+            touch-action: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+            transition: transform 0.1s;
         }
-        .mobile-btn:active, .mobile-btn.pressed { transform: scale(0.9); }
-        #btn-jump { bottom: 30px; right: 30px; width: 70px; height: 70px; font-size: 24px; background: rgba(50,150,255,0.35); border: 2px solid rgba(100,180,255,0.5); }
-        #btn-fire { bottom: 115px; right: 25px; width: 65px; height: 65px; font-size: 18px; background: rgba(255,60,30,0.35); border: 2px solid rgba(255,80,50,0.5); }
-        #btn-interact { bottom: 115px; right: 105px; width: 55px; height: 55px; font-size: 16px; background: rgba(255,200,0,0.3); border: 2px solid rgba(255,220,50,0.5); }
-        #btn-slot1 { bottom: 195px; right: 95px; width: 48px; height: 48px; font-size: 12px; background: rgba(100,100,100,0.3); border: 2px solid rgba(150,150,150,0.4); }
-        #btn-slot1.active-slot { background: rgba(255,100,30,0.45); }
-        #btn-slot2 { bottom: 195px; right: 35px; width: 48px; height: 48px; font-size: 12px; background: rgba(100,100,100,0.3); border: 2px solid rgba(150,150,150,0.4); display: none; }
-        #btn-slot2.active-slot { background: rgba(255,100,30,0.45); }
-        #btn-slot3 { bottom: 250px; right: 65px; width: 48px; height: 48px; font-size: 12px; background: rgba(100,100,100,0.3); border: 2px solid rgba(150,150,150,0.4); display: none; }
-        #btn-slot3.active-slot { background: rgba(255,100,30,0.45); }
 
-        #btn-pause { top: 12px; left: 12px; width: 44px; height: 44px; font-size: 18px; background: rgba(100,100,100,0.3); border: 2px solid rgba(150,150,150,0.3); border-radius: 10px; }
-        #btn-chat { top: 12px; left: 66px; width: 44px; height: 44px; font-size: 16px; background: rgba(100,100,100,0.3); border: 2px solid rgba(150,150,150,0.3); border-radius: 10px; }
-        #btn-fps { top: 12px; left: 120px; width: 44px; height: 44px; font-size: 10px; background: rgba(100,100,100,0.3); border: 2px solid rgba(150,150,150,0.3); border-radius: 10px; display: none; }
-        #btn-fps.active-fps { background: rgba(200,0,0,0.5); }
-        #btn-summon { top: 64px; left: 12px; width: 44px; height: 44px; font-size: 14px; background: rgba(100,50,200,0.3); border: 2px solid rgba(150,100,255,0.4); border-radius: 10px; }
-        #btn-admin { top: 64px; left: 62px; width: 44px; height: 44px; font-size: 14px; background: rgba(255,215,0,0.18); border: 2px solid rgba(255,215,0,0.35); border-radius: 10px; display: none; }
+        .mobile-btn:active,
+        .mobile-btn.pressed {
+            transform: scale(0.9);
+        }
 
-        #btn-zoom-in { bottom: 30px; left: 180px; width: 38px; height: 38px; font-size: 20px; background: rgba(100,100,100,0.25); border: 2px solid rgba(150,150,150,0.25); border-radius: 8px; }
-        #btn-zoom-out { bottom: 80px; left: 180px; width: 38px; height: 38px; font-size: 20px; background: rgba(100,100,100,0.25); border: 2px solid rgba(150,150,150,0.25); border-radius: 8px; }
+        #btn-jump {
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            font-size: 24px;
+            background: rgba(50, 150, 255, 0.35);
+            border: 2px solid rgba(100, 180, 255, 0.5);
+        }
+
+        #btn-fire {
+            bottom: 115px;
+            right: 25px;
+            width: 65px;
+            height: 65px;
+            font-size: 18px;
+            background: rgba(255, 60, 30, 0.35);
+            border: 2px solid rgba(255, 80, 50, 0.5);
+        }
+
+        #btn-interact {
+            bottom: 115px;
+            right: 105px;
+            width: 55px;
+            height: 55px;
+            font-size: 16px;
+            background: rgba(255, 200, 0, 0.3);
+            border: 2px solid rgba(255, 220, 50, 0.5);
+        }
+
+        #btn-slot1 {
+            bottom: 195px;
+            right: 95px;
+            width: 48px;
+            height: 48px;
+            font-size: 12px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 2px solid rgba(150, 150, 150, 0.4);
+        }
+
+        #btn-slot1.active-slot {
+            background: rgba(255, 100, 30, 0.45);
+        }
+
+        #btn-slot2 {
+            bottom: 195px;
+            right: 35px;
+            width: 48px;
+            height: 48px;
+            font-size: 12px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 2px solid rgba(150, 150, 150, 0.4);
+            display: none;
+        }
+
+        #btn-slot2.active-slot {
+            background: rgba(255, 100, 30, 0.45);
+        }
+
+        #btn-slot3 {
+            bottom: 250px;
+            right: 65px;
+            width: 48px;
+            height: 48px;
+            font-size: 12px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 2px solid rgba(150, 150, 150, 0.4);
+            display: none;
+        }
+
+        #btn-slot3.active-slot {
+            background: rgba(255, 100, 30, 0.45);
+        }
+
+        #btn-pause {
+            top: 12px;
+            left: 12px;
+            width: 44px;
+            height: 44px;
+            font-size: 18px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 2px solid rgba(150, 150, 150, 0.3);
+            border-radius: 10px;
+        }
+
+        #btn-chat {
+            top: 12px;
+            left: 66px;
+            width: 44px;
+            height: 44px;
+            font-size: 16px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 2px solid rgba(150, 150, 150, 0.3);
+            border-radius: 10px;
+        }
+
+        #btn-fps {
+            top: 12px;
+            left: 120px;
+            width: 44px;
+            height: 44px;
+            font-size: 10px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 2px solid rgba(150, 150, 150, 0.3);
+            border-radius: 10px;
+            display: none;
+        }
+
+        #btn-fps.active-fps {
+            background: rgba(200, 0, 0, 0.5);
+        }
+
+        #btn-summon {
+            top: 64px;
+            left: 12px;
+            width: 44px;
+            height: 44px;
+            font-size: 14px;
+            background: rgba(100, 50, 200, 0.3);
+            border: 2px solid rgba(150, 100, 255, 0.4);
+            border-radius: 10px;
+        }
+
+        #btn-admin {
+            top: 64px;
+            left: 62px;
+            width: 44px;
+            height: 44px;
+            font-size: 14px;
+            background: rgba(255, 215, 0, 0.18);
+            border: 2px solid rgba(255, 215, 0, 0.35);
+            border-radius: 10px;
+            display: none;
+        }
+
+        #btn-zoom-in {
+            bottom: 30px;
+            left: 180px;
+            width: 38px;
+            height: 38px;
+            font-size: 20px;
+            background: rgba(100, 100, 100, 0.25);
+            border: 2px solid rgba(150, 150, 150, 0.25);
+            border-radius: 8px;
+        }
+
+        #btn-zoom-out {
+            bottom: 80px;
+            left: 180px;
+            width: 38px;
+            height: 38px;
+            font-size: 20px;
+            background: rgba(100, 100, 100, 0.25);
+            border: 2px solid rgba(150, 150, 150, 0.25);
+            border-radius: 8px;
+        }
 
         #rotate-hint {
-            display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; color: white;
-            flex-direction: column; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif;
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+            color: white;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
         }
-        #rotate-hint .icon { font-size: 60px; margin-bottom: 20px; animation: rotatePhone 2s ease-in-out infinite; }
-        #rotate-hint .msg { font-size: 16px; letter-spacing: 2px; color: #aaa; }
-        @keyframes rotatePhone { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+
+        #rotate-hint .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: rotatePhone 2s ease-in-out infinite;
+        }
+
+        #rotate-hint .msg {
+            font-size: 16px;
+            letter-spacing: 2px;
+            color: #aaa;
+        }
+
+        @keyframes rotatePhone {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(90deg);
+            }
+        }
 
         @media (max-width: 900px) and (orientation: landscape) {
-            #instructions { display: none !important; }
-            #hotbar { bottom: 8px; }
-            .hotbar-slot { width: 44px; height: 44px; font-size: 10px; }
-            #mode-indicator { bottom: 58px; font-size: 9px; }
-            #shop-hint { bottom: 70px; font-size: 11px; }
+            #instructions {
+                display: none !important;
+            }
+
+            #hotbar {
+                bottom: 8px;
+            }
+
+            .hotbar-slot {
+                width: 44px;
+                height: 44px;
+                font-size: 10px;
+            }
+
+            #mode-indicator {
+                bottom: 58px;
+                font-size: 9px;
+            }
+
+            #shop-hint {
+                bottom: 70px;
+                font-size: 11px;
+            }
         }
-        @media (max-width: 600px) and (orientation: portrait) { #rotate-hint { display: flex; } }
+
+        @media (max-width: 600px) and (orientation: portrait) {
+            #rotate-hint {
+                display: flex;
+            }
+        }
     </style>
 </head>
+
 <body>
     <audio id="bg-music" src="bgm.mp3" loop preload="auto"></audio>
+
+    <div id="hud-bottom-left">
+        <div
+            style="font-size:10px; color:#fff; font-family:'Orbitron',sans-serif; text-shadow:0 0 4px #000; letter-spacing:1px; margin-bottom:-4px;">
+            STAMINA</div>
+        <div
+            style="width:180px; height:12px; background:rgba(0,0,0,0.6); border:2px solid #444; border-radius:4px; overflow:hidden;">
+            <div id="stamina-fill"
+                style="width:100%; height:100%; background:linear-gradient(90deg, #ffcc00, #ffaa00); transition:0.1s width;">
+            </div>
+        </div>
+        <div style="font-size:11px; color:#aaa; font-weight:bold; margin-top:2px;">[SHIFT] Sprint &nbsp;&nbsp; [F]
+            Flashlight &nbsp;&nbsp; [V] ShiftLock</div>
+    </div>
 
     <div id="rotate-hint">
         <div class="icon">📱</div>
@@ -212,14 +966,19 @@
     <div id="main-menu" class="overlay-menu">
         <div class="menu-box">
             <h1>R6 MULTI</h1>
-            <p style="color:#666; font-size:13px; margin-top:-14px; font-family:'Orbitron',sans-serif; letter-spacing:2px;">TACTICAL EDITION</p>
+            <p
+                style="color:#666; font-size:13px; margin-top:-14px; font-family:'Orbitron',sans-serif; letter-spacing:2px;">
+                TACTICAL EDITION</p>
             <input type="text" id="username-input" placeholder="Enter Callsign" maxlength="16" value="Guest">
             <div class="row">
-                <button id="host-btn" class="menu-btn" style="background:linear-gradient(135deg,#28a745,#1a7a30);">Host</button>
-                <input type="number" id="max-players" value="4" min="2" max="10" style="width: 50px;" title="Max Players">
+                <button id="host-btn" class="menu-btn"
+                    style="background:linear-gradient(135deg,#28a745,#1a7a30);">Host</button>
+                <input type="number" id="max-players" value="4" min="2" max="10" style="width: 50px;"
+                    title="Max Players">
             </div>
             <div style="margin: 12px 0; border-top: 1px solid #333; position: relative;">
-                <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: rgba(12,12,18,1); padding: 0 10px; color: #555; font-size: 12px; font-family:'Orbitron',sans-serif;">OR</span>
+                <span
+                    style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: rgba(12,12,18,1); padding: 0 10px; color: #555; font-size: 12px; font-family:'Orbitron',sans-serif;">OR</span>
             </div>
             <div class="row">
                 <input type="text" id="join-code" placeholder="Code" maxlength="5" style="text-transform: uppercase;">
@@ -235,13 +994,22 @@
         <div class="menu-box">
             <h1 style="font-size:28px;">PAUSED</h1>
             <button id="resume-btn" class="menu-btn">Resume</button>
-            <button id="reset-btn" class="menu-btn" style="background:linear-gradient(135deg,#cc3333,#881111); margin-top:12px;">Reset Character</button>
-            <button id="music-btn" class="menu-btn" style="background:linear-gradient(135deg,#aa33aa,#771177); margin-top:12px;">Music: ON</button>
-            <div id="dev-extras" style="display:none; margin-top:16px; border-top:1px solid #555; padding-top:12px; text-align:left;">
+            <button id="reset-btn" class="menu-btn"
+                style="background:linear-gradient(135deg,#cc3333,#881111); margin-top:12px;">Reset Character</button>
+            <button id="music-btn" class="menu-btn"
+                style="background:linear-gradient(135deg,#aa33aa,#771177); margin-top:12px;">Music: ON</button>
+            <div id="dev-extras"
+                style="display:none; margin-top:16px; border-top:1px solid #555; padding-top:12px; text-align:left;">
                 <div style="font-weight:bold; color:#ffd700; margin-bottom:6px; font-size:12px;">DEV EXTRAS</div>
-                <label style="display:block; margin-bottom:6px; font-size:14px; cursor:pointer;"><input type="checkbox" id="dev-ck-bubble" onchange="window.devFx=(window.devFx||{});window.devFx.bubble=this.checked;"> Golden Chat Bubble</label>
-                <label style="display:block; margin-bottom:6px; font-size:14px; cursor:pointer;"><input type="checkbox" id="dev-ck-trail" onchange="window.devFx=(window.devFx||{});window.devFx.trail=this.checked;"> Cosmic Dev Trail</label>
-                <label style="display:block; font-size:14px; cursor:pointer;"><input type="checkbox" id="dev-ck-hat" onchange="window.devFx=(window.devFx||{});window.devFx.hat=this.checked; if(localAvatar){localAvatar.devFx=window.devFx;}"> Top Hat & Shades</label>
+                <label style="display:block; margin-bottom:6px; font-size:14px; cursor:pointer;"><input type="checkbox"
+                        id="dev-ck-bubble" onchange="window.devFx=(window.devFx||{});window.devFx.bubble=this.checked;">
+                    Golden Chat Bubble</label>
+                <label style="display:block; margin-bottom:6px; font-size:14px; cursor:pointer;"><input type="checkbox"
+                        id="dev-ck-trail" onchange="window.devFx=(window.devFx||{});window.devFx.trail=this.checked;">
+                    Cosmic Dev Trail</label>
+                <label style="display:block; font-size:14px; cursor:pointer;"><input type="checkbox" id="dev-ck-hat"
+                        onchange="window.devFx=(window.devFx||{});window.devFx.hat=this.checked; if(localAvatar){localAvatar.devFx=window.devFx;}">
+                    Top Hat & Shades</label>
             </div>
         </div>
     </div>
@@ -249,7 +1017,8 @@
     <div id="admin-ui" class="overlay-menu">
         <div class="menu-box">
             <h1 style="font-size:28px; margin-bottom:6px;">ADMIN PANEL</h1>
-            <div style="color:#666; font-size:12px; margin-top:-6px; margin-bottom:12px; font-family:'Orbitron',sans-serif;">
+            <div
+                style="color:#666; font-size:12px; margin-top:-6px; margin-bottom:12px; font-family:'Orbitron',sans-serif;">
                 Only available for username <b>dev</b>. Press <b>F2</b> to toggle.
             </div>
 
@@ -269,12 +1038,14 @@
                     <label><input type="checkbox" id="admin-ck-biggerBoom" /> Big Boom</label>
                     <label><input type="checkbox" id="admin-ck-heavyGrenades" /> Heavy Grenades</label>
                 </div>
-                <button id="admin-apply-items" class="menu-btn" style="margin-top:12px; width:100%; background:linear-gradient(135deg,#3399ff,#2277dd);">Apply</button>
+                <button id="admin-apply-items" class="menu-btn"
+                    style="margin-top:12px; width:100%; background:linear-gradient(135deg,#3399ff,#2277dd);">Apply</button>
             </div>
 
             <div class="admin-section" style="margin-top:10px; text-align:left;">
                 <div class="admin-section-title">Target Player</div>
-                <select id="admin-target-player" style="width:100%; padding:8px; margin-top:4px; font-size:14px; background:#1a1a2e; color:#eee; border:2px solid #555; border-radius:6px; font-weight:bold; font-family:'Orbitron',sans-serif;">
+                <select id="admin-target-player"
+                    style="width:100%; padding:8px; margin-top:4px; font-size:14px; background:#1a1a2e; color:#eee; border:2px solid #555; border-radius:6px; font-weight:bold; font-family:'Orbitron',sans-serif;">
                     <option value="all">🎮 ALL PLAYERS</option>
                     <option value="self">👤 SELF</option>
                 </select>
@@ -282,23 +1053,40 @@
 
             <div class="admin-section" style="margin-top:16px; text-align:left;">
                 <div class="admin-section-title">Admin Actions</div>
-                <button id="admin-spawn-npcs" class="menu-btn" style="margin-top:6px; width:100%; background:linear-gradient(135deg,#6a5cff,#3b2aa5); flex:0;">Spawn NPCs</button>
-                <button id="admin-test-boom" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff8844,#aa3311); flex:0;">Explode Target</button>
-                <button id="admin-kill" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#aa3311,#771100); flex:0;">Kill Target</button>
-                <button id="admin-kick" class="menu-btn" style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff3300,#cc1100); flex:0;">Kick Target</button>
+                <button id="admin-toggle-grenade-spam" class="menu-btn"
+                    style="margin-top:6px; width:100%; background:linear-gradient(135deg,#ffcc33,#cc7a00); flex:0;">Enable
+                    Grenade Spam</button>
+                <button id="admin-spawn-npcs" class="menu-btn"
+                    style="margin-top:10px; width:100%; background:linear-gradient(135deg,#6a5cff,#3b2aa5); flex:0;">Spawn
+                    NPCs</button>
+                <button id="admin-test-boom" class="menu-btn"
+                    style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff8844,#aa3311); flex:0;">Explode
+                    Target</button>
+                <button id="admin-kill" class="menu-btn"
+                    style="margin-top:10px; width:100%; background:linear-gradient(135deg,#aa3311,#771100); flex:0;">Kill
+                    Target</button>
+                <button id="admin-kick" class="menu-btn"
+                    style="margin-top:10px; width:100%; background:linear-gradient(135deg,#ff3300,#cc1100); flex:0;">Kick
+                    Target</button>
             </div>
 
-            <button id="admin-close-btn" class="menu-btn" style="background:linear-gradient(135deg,#444,#222); margin-top:16px;">Close</button>
+            <button id="admin-close-btn" class="menu-btn"
+                style="background:linear-gradient(135deg,#444,#222); margin-top:16px;">Close</button>
         </div>
     </div>
 
     <div id="shop-ui">
         <div class="menu-box" style="max-width:520px;">
             <h2>🏪 Tony's Armory</h2>
-            <p style="color:#666; font-size:11px; margin-top:-10px; margin-bottom:10px; font-family:'Orbitron',sans-serif;">TACTICAL GEAR SUPPLIER</p>
-            <div id="shop-coins" style="color:#ffd700; font-size:16px; font-family:'Orbitron',sans-serif; margin-bottom:12px;">💰 Coins: <span id="shop-coin-count">100</span></div>
+            <p
+                style="color:#666; font-size:11px; margin-top:-10px; margin-bottom:10px; font-family:'Orbitron',sans-serif;">
+                TACTICAL GEAR SUPPLIER</p>
+            <div id="shop-coins"
+                style="color:#ffd700; font-size:16px; font-family:'Orbitron',sans-serif; margin-bottom:12px;">💰 Coins:
+                <span id="shop-coin-count">100</span></div>
             <div id="shop-items-container"></div>
-            <button id="close-shop-btn" class="menu-btn" style="background:linear-gradient(135deg,#444,#222); margin-top:14px; font-size:16px;">Close</button>
+            <button id="close-shop-btn" class="menu-btn"
+                style="background:linear-gradient(135deg,#444,#222); margin-top:14px; font-size:16px;">Close</button>
         </div>
     </div>
 
@@ -310,6 +1098,12 @@
         <div id="coin-display">💰 100</div>
     </div>
 
+    <div id="minimap-container" style="display:none;">
+        <canvas id="minimap-canvas" width="200" height="200"></canvas>
+        <div id="minimap-toggle" title="Toggle Minimap (M)">🗺️</div>
+        <div id="minimap-zoom" title="Zoom In/Out">±</div>
+    </div>
+
     <div id="chat-container">
         <div id="chat-messages"></div>
         <div id="chat-input-wrapper">
@@ -318,28 +1112,53 @@
     </div>
 
     <div id="hotbar">
-        <div class="hotbar-slot" id="slot-1"><span>1</span><div id="slot-name">Item</div></div>
+        <div class="hotbar-slot" id="slot-1"><span>1</span>
+            <div id="slot-name">Item</div>
+        </div>
         <div class="hotbar-slot" id="slot-2" style="display:none;"><span>2</span>Pistol</div>
         <div class="hotbar-slot" id="slot-3" style="display:none;"><span>3</span>Boom</div>
-        <div class="hotbar-slot" id="slot-4" style="display:none; border-color:#d900ff; box-shadow:0 0 10px #d900ff;"><span>4</span>VXTOOL</div>
+        <div class="hotbar-slot" id="slot-4" style="display:none; border-color:#d900ff; box-shadow:0 0 10px #d900ff;">
+            <span>4</span>VXTOOL</div>
     </div>
 
-    <div id="vx-ui" style="display:none; position:absolute; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); border:2px solid #ff0; padding:12px; color:#fff; border-radius:8px; z-index:50;">
-        <h3 style="margin:0 0 8px 0; color:#ff0; font-family:'Orbitron',sans-serif; font-size:14px; text-align:center;">VX TOOLS 🛠️</h3>
+    <div id="vx-ui"
+        style="display:none; position:absolute; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); border:2px solid #ff0; padding:12px; color:#fff; border-radius:8px; z-index:50;">
+        <h3 style="margin:0 0 8px 0; color:#ff0; font-family:'Orbitron',sans-serif; font-size:14px; text-align:center;">
+            VX TOOLS 🛠️</h3>
         <div style="display:flex; justify-content:center; gap:6px; margin-bottom:6px;">
-            <input type="number" id="vx-w" value="2" step="0.5" style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;" title="Width"> 
-            <input type="number" id="vx-h" value="2" step="0.5" style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;" title="Height"> 
-            <input type="number" id="vx-d" value="2" step="0.5" style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;" title="Depth">
+            <input type="number" id="vx-w" value="2" step="0.5"
+                style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;"
+                title="Width">
+            <input type="number" id="vx-h" value="2" step="0.5"
+                style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;"
+                title="Height">
+            <input type="number" id="vx-d" value="2" step="0.5"
+                style="width:45px; padding:2px; font-size:12px; background:#222; color:#fff; border:1px solid #770;"
+                title="Depth">
         </div>
         <div style="display:flex; justify-content:center; gap:6px; margin-bottom:6px;">
-            <input type="number" id="vx-rx" value="0" step="15" style="width:45px; padding:2px; font-size:12px; background:#112; color:#fff; border:1px solid #00f;" title="Pitch (RX)"> 
-            <input type="number" id="vx-ry" value="0" step="15" style="width:45px; padding:2px; font-size:12px; background:#112; color:#fff; border:1px solid #00f;" title="Yaw (RY)"> 
-            <input type="number" id="vx-rz" value="0" step="15" style="width:45px; padding:2px; font-size:12px; background:#112; color:#fff; border:1px solid #00f;" title="Roll (RZ)">
+            <input type="number" id="vx-rx" value="0" step="15"
+                style="width:45px; padding:2px; font-size:12px; background:#112; color:#fff; border:1px solid #00f;"
+                title="Pitch (RX)">
+            <input type="number" id="vx-ry" value="0" step="15"
+                style="width:45px; padding:2px; font-size:12px; background:#112; color:#fff; border:1px solid #00f;"
+                title="Yaw (RY)">
+            <input type="number" id="vx-rz" value="0" step="15"
+                style="width:45px; padding:2px; font-size:12px; background:#112; color:#fff; border:1px solid #00f;"
+                title="Roll (RZ)">
         </div>
-        <input type="color" id="vx-col" value="#d900ff" style="width:100%; height:28px; margin-bottom:6px; border:none; background:none; cursor:pointer;" title="Color">
-        <label style="font-size:12px; display:block; text-align:center; font-weight:bold; margin-bottom:6px; cursor:pointer;"><input type="checkbox" id="vx-move"> Moving Parts</label>
-        <button id="vx-place" style="margin-top:4px; width:100%; background:linear-gradient(135deg,#00b09b,#96c93d); color:#fff; border:1px solid #fff; padding:6px; font-weight:bold; cursor:pointer; font-size:14px;">⬇ PLACE PART ⬇</button>
-        <button id="vx-clear" style="margin-top:6px; width:100%; background:#a33; color:#fff; border:1px solid #ff4444; padding:6px; font-weight:bold; cursor:pointer;">Clear All Objects</button>
+        <input type="color" id="vx-col" value="#d900ff"
+            style="width:100%; height:28px; margin-bottom:6px; border:none; background:none; cursor:pointer;"
+            title="Color">
+        <label
+            style="font-size:12px; display:block; text-align:center; font-weight:bold; margin-bottom:6px; cursor:pointer;"><input
+                type="checkbox" id="vx-move"> Moving Parts</label>
+        <button id="vx-place"
+            style="margin-top:4px; width:100%; background:linear-gradient(135deg,#00b09b,#96c93d); color:#fff; border:1px solid #fff; padding:6px; font-weight:bold; cursor:pointer; font-size:14px;">⬇
+            PLACE PART ⬇</button>
+        <button id="vx-clear"
+            style="margin-top:6px; width:100%; background:#a33; color:#fff; border:1px solid #ff4444; padding:6px; font-weight:bold; cursor:pointer;">Clear
+            All Objects</button>
     </div>
 
     <div id="mode-indicator" class="normal">Normal Mode</div>
@@ -357,7 +1176,11 @@
     </div>
 
     <div id="mobile-controls">
-        <div id="joystick-zone"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
+        <div id="joystick-zone">
+            <div id="joystick-base">
+                <div id="joystick-stick"></div>
+            </div>
+        </div>
         <div id="look-zone"></div>
 
         <div id="btn-jump" class="mobile-btn">⬆</div>
@@ -366,7 +1189,9 @@
         <div id="btn-slot1" class="mobile-btn">1</div>
         <div id="btn-slot2" class="mobile-btn">2</div>
         <div id="btn-slot3" class="mobile-btn">3</div>
-        <div id="btn-slot4" class="mobile-btn" style="bottom: 305px; right: 85px; width: 48px; height: 48px; font-size: 12px; background: rgba(200,0,255,0.3); border: 2px solid rgba(255,0,255,0.4); display: none;">4</div>
+        <div id="btn-slot4" class="mobile-btn"
+            style="bottom: 305px; right: 85px; width: 48px; height: 48px; font-size: 12px; background: rgba(200,0,255,0.3); border: 2px solid rgba(255,0,255,0.4); display: none;">
+            4</div>
 
         <div id="btn-pause" class="mobile-btn">⏸</div>
         <div id="btn-chat" class="mobile-btn">💬</div>
@@ -447,7 +1272,7 @@
                 musicStarted = true;
                 bgMusic.volume = 0.2;
                 if (musicEnabled) bgMusic.play().catch(e => console.log('Autoplay prevented', e));
-                
+
                 const musicBtn = document.getElementById('music-btn');
                 if (musicBtn) {
                     musicBtn.addEventListener('click', () => {
@@ -465,7 +1290,7 @@
                 }
             }
         }
-        function snd(cb) { if (!audioCtx) return; try { cb(); } catch (e) {} }
+        function snd(cb) { if (!audioCtx) return; try { cb(); } catch (e) { } }
 
         function playJumpSound() {
             snd(() => {
@@ -820,6 +1645,7 @@
         const explosions = [];
 
         let adminOpen = false, adminDevEnabled = false;
+        let noGrenadeCooldown = false;
 
         let actionMode = false, fpsMode = false;
         let recoilOffset = { x: 0, y: 0 }, camShake = { x: 0, y: 0, intensity: 0 };
@@ -870,6 +1696,9 @@
         let peer = null, isHost = false, myPeerId = "", hostConn = null, clientConns = [], maxPlayers = 4;
         const remotePlayers = {};
         let networkTickRate = 50;
+        let devFx = { bubble: false, trail: false, hat: false };
+        let stamina = 100;
+        let isNight = false;
 
         function generateCode() { return Math.random().toString(36).substring(2, 7).toUpperCase(); }
         function showLoading(s, t = "CONNECTING...") {
@@ -969,6 +1798,7 @@
                         p.targetRot = data.rot;
                         p.state = data.state;
                         p.avatar.devFx = data.devFx || null;
+                        if (p.avatar.flashlight) p.avatar.flashlight.intensity = data.flash ? 3 : 0;
                     }
                     if (p.avatar.equipped !== data.equip) setAvatarEquip(p.avatar, data.equip);
                 }
@@ -1034,6 +1864,18 @@
                 for (let k in dynamicObjects) delete dynamicObjects[k];
                 if (isHost) broadcast(data);
             }
+            else if (data.type === 'set_time') {
+                if (data.night) {
+                    scene.background.setHex(0x050515);
+                    if (scene.fog) scene.fog.color.setHex(0x050515);
+                    dirLight.intensity = 0.1; dirLight.color.setHex(0xaaaaff);
+                } else {
+                    scene.background.setHex(currentMap === 'pool' ? 0x7EC8E3 : 0x0a0a12);
+                    if (scene.fog) scene.fog.color.setHex(currentMap === 'pool' ? 0x7EC8E3 : 0x0a0a12);
+                    dirLight.intensity = 0.9; dirLight.color.setHex(0xffeedd);
+                }
+                if (isHost) broadcast(data);
+            }
         }
 
         function removePlayer(id) {
@@ -1053,7 +1895,7 @@
 
         setInterval(() => {
             if (!gameActive || !localAvatar) return;
-            
+
             const now = performance.now();
             for (let id in remotePlayers) {
                 if (now - remotePlayers[id].lastSeen > 3500) {
@@ -1069,7 +1911,8 @@
                 rot: localAvatar.group.rotation.y,
                 state: playerState,
                 equip: localAvatar.equipped,
-                devFx: window.devFx || null
+                devFx: window.devFx || null,
+                flash: localAvatar.flashlight ? (localAvatar.flashlight.intensity > 0) : false
             });
         }, networkTickRate);
 
@@ -1166,17 +2009,17 @@
             const bw = Math.min(tw + 30, 340);
             const bx = (384 - bw) / 2;
 
-            if (avatar.devFx?.bubble || (avatar===localAvatar && window.devFx?.bubble)) {
+            if (avatar.devFx?.bubble || (avatar === localAvatar && window.devFx?.bubble)) {
                 ctx.fillStyle = 'rgba(255,215,0,0.95)';
             } else {
                 ctx.fillStyle = 'rgba(0,0,0,0.82)';
             }
-            
+
             ctx.beginPath();
             ctx.roundRect(bx, 8, bw, 58, 12);
             ctx.fill();
 
-            if (avatar.devFx?.bubble || (avatar===localAvatar && window.devFx?.bubble)) {
+            if (avatar.devFx?.bubble || (avatar === localAvatar && window.devFx?.bubble)) {
                 ctx.strokeStyle = '#000000';
             } else {
                 ctx.strokeStyle = 'rgba(255,255,255,0.25)';
@@ -1190,7 +2033,7 @@
             ctx.lineTo(200, 66);
             ctx.fill();
 
-            if (avatar.devFx?.bubble || (avatar===localAvatar && window.devFx?.bubble)) {
+            if (avatar.devFx?.bubble || (avatar === localAvatar && window.devFx?.bubble)) {
                 ctx.fillStyle = '#000000';
             } else {
                 ctx.fillStyle = '#ffffff';
@@ -1481,6 +2324,227 @@
 
         const POOL_CX = 60, POOL_CZ = -40;
 
+        /* ─────────────────────────────────────────────
+           MINIMAP SYSTEM
+           ───────────────────────────────────────────── */
+        let minimapVisible = false;
+        let minimapZoom = 1;
+        let minimapCanvas, minimapCtx;
+        let mapFeatures = { walls: [], shops: [], chairs: [], pools: [], platforms: [] };
+
+        function initMinimap() {
+            minimapCanvas = document.getElementById('minimap-canvas');
+            minimapCtx = minimapCanvas.getContext('2d');
+            minimapCanvas.width = 200;
+            minimapCanvas.height = 200;
+        }
+
+        function toggleMinimap() {
+            minimapVisible = !minimapVisible;
+            document.getElementById('minimap-container').style.display = minimapVisible ? 'block' : 'none';
+        }
+
+        function updateMinimapZoom(delta) {
+            minimapZoom = Math.max(0.5, Math.min(3, minimapZoom + delta * 0.2));
+        }
+
+        function extractMapFeatures() {
+            // Use cached features if available (populated by buildMap)
+            if (mapFeatures && mapFeatures.cached && !mapFeatures.dirty) {
+                return;
+            }
+
+            mapFeatures = { walls: [], shops: [], chairs: [], pools: [], platforms: [], jumpPads: [], cached: false, dirty: false };
+
+            envGroup.children.forEach(obj => {
+                if (obj.geometry) {
+                    const box = new THREE.Box3().setFromObject(obj);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+
+                    // Detect object type by position, material, and known positions
+                    if (obj.position.y < -5) {
+                        mapFeatures.pools.push({ x: center.x, z: center.z, w: size.x, d: size.z });
+                    }
+                    if (obj.position.y > 0.5 && obj.position.y < 3) {
+                        if (size.x > 3 && size.z > 3) {
+                            mapFeatures.shops.push({ x: center.x, z: center.z, w: size.x, d: size.z });
+                        } else if (size.x < 3 && size.z < 3) {
+                            mapFeatures.chairs.push({ x: center.x, z: center.z });
+                        }
+                    }
+                    if (obj.position.y > 10 || (size.x > 50 && Math.abs(obj.position.z) > 60) || (size.y > 25 && Math.abs(obj.position.z) > 65)) {
+                        mapFeatures.walls.push({ x: center.x, z: center.z, w: size.x, d: size.z, rot: obj.rotation.y });
+                    }
+                    if (obj.material && obj.material.emissive && obj.material.emissive.lengthSq() > 0.1) {
+                        mapFeatures.platforms.push({ x: center.x, z: center.z, w: size.x, d: size.z });
+                    }
+                    // Jump pads (magenta platforms)
+                    if (obj.material && obj.material.color && obj.material.color.r > 0.8 && obj.material.color.b > 0.8) {
+                        if (obj.position.y < 1 && size.x < 5 && size.z < 5) {
+                            mapFeatures.jumpPads.push({ x: center.x, z: center.z, w: size.x, d: size.z });
+                        }
+                    }
+                }
+            });
+
+            // Add known jump pad positions
+            if (window.jumpPads) {
+                window.jumpPads.forEach(pad => {
+                    mapFeatures.jumpPads.push({ x: pad.position.x, z: pad.position.z, w: 4, d: 4 });
+                });
+            }
+
+            // Add parkour platforms
+            if (window.parkourPlatforms) {
+                window.parkourPlatforms.forEach(plat => {
+                    mapFeatures.platforms.push({ x: plat.position.x, z: plat.position.z, w: 4, d: 4 });
+                });
+            }
+
+            // Add map boundaries based on current map type
+            if (currentMap === 'pool') {
+                // Pool map boundaries
+                mapFeatures.walls.push({ x: 0, z: -200, w: 400, d: 2, rot: 0 });
+                mapFeatures.walls.push({ x: 0, z: 200, w: 400, d: 2, rot: 0 });
+                mapFeatures.walls.push({ x: -200, z: 0, w: 2, d: 400, rot: Math.PI / 2 });
+                mapFeatures.walls.push({ x: 200, z: 0, w: 2, d: 400, rot: Math.PI / 2 });
+            } else if (currentMap === 'hall') {
+                // Hall map boundaries
+                mapFeatures.walls.push({ x: 0, z: -70, w: 140, d: 2, rot: 0 });
+                mapFeatures.walls.push({ x: 0, z: 70, w: 140, d: 2, rot: 0 });
+                mapFeatures.walls.push({ x: -70, z: 0, w: 2, d: 140, rot: Math.PI / 2 });
+                mapFeatures.walls.push({ x: 70, z: 0, w: 2, d: 140, rot: Math.PI / 2 });
+            }
+
+            mapFeatures.cached = true;
+        }
+
+        function invalidateMapFeatures() {
+            if (mapFeatures) mapFeatures.dirty = true;
+        }
+
+        function renderMinimap() {
+            if (!minimapVisible || !minimapCtx || !localAvatar) return;
+
+            const ctx = minimapCtx;
+            const w = minimapCanvas.width;
+            const h = minimapCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const scale = 0.8 * minimapZoom;
+
+            // Clear
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.fillRect(0, 0, w, h);
+
+            // Border
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, w, h);
+
+            // Get player position
+            const playerPos = localAvatar.group.position;
+            const playerRot = localAvatar.group.rotation.y;
+
+            // Draw map features
+            extractMapFeatures();
+
+            // Walls
+            ctx.fillStyle = 'rgba(150, 150, 150, 0.6)';
+            mapFeatures.walls.forEach(wall => {
+                const dx = (wall.x - playerPos.x) * scale;
+                const dy = (wall.z - playerPos.z) * scale;
+                ctx.save();
+                ctx.translate(cx + dx, cy + dy);
+                ctx.rotate(wall.rot || 0);
+                ctx.fillRect(-wall.w * scale / 2, -wall.d * scale / 2, wall.w * scale, wall.d * scale);
+                ctx.restore();
+            });
+
+            // Shops
+            ctx.fillStyle = 'rgba(255, 170, 50, 0.7)';
+            mapFeatures.shops.forEach(shop => {
+                const dx = (shop.x - playerPos.x) * scale;
+                const dy = (shop.z - playerPos.z) * scale;
+                ctx.fillRect(cx + dx - shop.w * scale / 2, cy + dy - shop.d * scale / 2, shop.w * scale, shop.d * scale);
+            });
+
+            // Platforms (parkour, jump pads)
+            ctx.fillStyle = 'rgba(0, 255, 100, 0.6)';
+            mapFeatures.platforms.forEach(plat => {
+                const dx = (plat.x - playerPos.x) * scale;
+                const dy = (plat.z - playerPos.z) * scale;
+                ctx.fillRect(cx + dx - plat.w * scale / 2, cy + dy - plat.d * scale / 2, plat.w * scale, plat.d * scale);
+            });
+
+            // Pool water
+            ctx.fillStyle = 'rgba(50, 150, 255, 0.5)';
+            mapFeatures.pools.forEach(pool => {
+                const dx = (pool.x - playerPos.x) * scale;
+                const dy = (pool.z - playerPos.z) * scale;
+                ctx.fillRect(cx + dx - pool.w * scale / 2, cy + dy - pool.d * scale / 2, pool.w * scale, pool.d * scale);
+            });
+
+            // Chairs (small dots)
+            ctx.fillStyle = 'rgba(100, 80, 60, 0.8)';
+            mapFeatures.chairs.forEach(chair => {
+                const dx = (chair.x - playerPos.x) * scale;
+                const dy = (chair.z - playerPos.z) * scale;
+                ctx.beginPath();
+                ctx.arc(cx + dx, cy + dy, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Remote players (red dots)
+            ctx.fillStyle = 'rgba(255, 50, 50, 0.9)';
+            for (let id in remotePlayers) {
+                const rp = remotePlayers[id];
+                if (!rp.isDead) {
+                    const dx = (rp.targetPos.x - playerPos.x) * scale;
+                    const dy = (rp.targetPos.z - playerPos.z) * scale;
+                    ctx.beginPath();
+                    ctx.arc(cx + dx, cy + dy, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // NPCs (yellow dots)
+            ctx.fillStyle = 'rgba(255, 255, 50, 0.8)';
+            npcAvatars.forEach(npc => {
+                const dx = (npc.avatar.group.position.x - playerPos.x) * scale;
+                const dy = (npc.avatar.group.position.z - playerPos.z) * scale;
+                ctx.beginPath();
+                ctx.arc(cx + dx, cy + dy, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Player blip (green triangle pointing in direction)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(-playerRot);
+            ctx.fillStyle = 'rgba(50, 255, 50, 0.9)';
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(-5, 5);
+            ctx.lineTo(5, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Compass indicator (N at top)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = 'bold 12px Rajdhani, Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', cx, 14);
+
+            // Zoom level indicator
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '10px Rajdhani, Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText('x' + minimapZoom.toFixed(1), w - 4, h - 4);
+        }
+
         function updateMapContext() {
             let trunchbullExists = isTrunchbull;
             for (let id in remotePlayers) {
@@ -1507,6 +2571,7 @@
             window.chairPositions = [];
             window.shopPositions = [];
             shopAvatars.length = 0;
+            mapFeatures = { walls: [], shops: [], chairs: [], pools: [], platforms: [], jumpPads: [], cached: false, dirty: true };
 
             if (type === 'pool') {
                 scene.background.setHex(0x7EC8E3);
@@ -1639,6 +2704,54 @@
                 }
 
                 buildShop(-18, 0, -10);
+
+                const bM = new THREE.MeshStandardMaterial({ map: cT, color: 0x666666 });
+                const bW = (w, h, px, py, pz, r) => {
+                    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2), bM);
+                    m.position.set(px, py, pz); m.rotation.y = r;
+                    m.receiveShadow = true; m.castShadow = true;
+                    envGroup.add(m);
+                };
+                bW(400, 40, 0, 20, -200, 0); bW(400, 40, 0, 20, 200, Math.PI);
+                bW(400, 40, -200, 20, 0, Math.PI / 2); bW(400, 40, 200, 20, 0, -Math.PI / 2);
+
+                const tm = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+                const tower = new THREE.Mesh(new THREE.BoxGeometry(4, 25, 4), tm);
+                tower.position.set(POOL_CX, 12, POOL_CZ - 14); envGroup.add(tower);
+                const board = new THREE.Mesh(new THREE.BoxGeometry(2, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x33aaee }));
+                board.position.set(POOL_CX, 24.5, POOL_CZ - 10); envGroup.add(board);
+
+                const fBase = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 2, 32), new THREE.MeshStandardMaterial({ color: 0x999999 }));
+                fBase.position.set(0, 1, 0); envGroup.add(fBase);
+                const fp = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 8, 16), new THREE.MeshStandardMaterial({ color: 0x777777 }));
+                fp.position.set(0, 4, 0); envGroup.add(fp);
+                const fw = new THREE.Mesh(new THREE.CylinderGeometry(7.5, 7.5, 0.5, 32), new THREE.MeshStandardMaterial({ color: 0x2288cc, transparent: true, opacity: 0.8 }));
+                fw.position.set(0, 1.8, 0); envGroup.add(fw);
+
+                window.jumpPads = [];
+                const addPad = (x, z) => {
+                    const pad = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 0.5, 16), new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x550055 }));
+                    pad.position.set(x, 0.25, z); envGroup.add(pad);
+                    window.jumpPads.push(pad);
+                };
+                addPad(15, -15); addPad(POOL_CX - 15, POOL_CZ); addPad(-40, 40);
+
+                window.parkourPlatforms = [];
+                for (let k = 0; k < 25; k++) {
+                    const pt = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.5, 3.5), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x004400 }));
+                    pt.position.set(-60 + Math.sin(k * 0.8) * 18, 2 + k * 4.5, -60 + Math.cos(k * 0.8) * 18);
+                    envGroup.add(pt); window.parkourPlatforms.push(pt);
+                }
+
+                for (let k = 0; k < 8; k++) {
+                    const lx = -100 + k * 30, lz = 20;
+                    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                    pole.position.set(lx, 4, lz); envGroup.add(pole);
+                    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.8), new THREE.MeshBasicMaterial({ color: 0xffffaa, transparent: true, opacity: 0.8 }));
+                    bulb.position.set(lx, 8.5, lz); envGroup.add(bulb);
+                    const pl = new THREE.PointLight(0xffffaa, 0.5, 40);
+                    pl.position.set(lx, 8, lz); envGroup.add(pl);
+                }
             }
             else if (type === 'hall') {
                 scene.background.setHex(0x0a0a12);
@@ -1969,14 +3082,14 @@
                 const col = document.getElementById('vx-col').value;
                 vxPreviewMesh.scale.set(w, h, d);
                 vxPreviewMesh.material.color.set(col);
-                
+
                 let fd = fpsMode ? new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize() : getPlayerForwardDir();
-                const origin = localAvatar.group.position.clone().add(new THREE.Vector3(0, 2, 0)).addScaledVector(fd, 4 + Math.max(w,d)/2);
-                
+                const origin = localAvatar.group.position.clone().add(new THREE.Vector3(0, 2, 0)).addScaledVector(fd, 4 + Math.max(w, d) / 2);
+
                 const rx = parseFloat(document.getElementById('vx-rx')?.value) || 0;
                 const ry = parseFloat(document.getElementById('vx-ry')?.value) || 0;
                 const rz = parseFloat(document.getElementById('vx-rz')?.value) || 0;
-                
+
                 vxPreviewMesh.position.copy(origin);
                 vxPreviewMesh.rotation.set(rx * Math.PI / 180, camYaw + (ry * Math.PI / 180), rz * Math.PI / 180);
             } else {
@@ -2053,21 +3166,21 @@
             hd.castShadow = PERF.enableShadows;
             hG.add(hd);
 
-            const hr = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 16), new THREE.MeshStandardMaterial({color: 0x111111}));
+            const hr = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 16), new THREE.MeshStandardMaterial({ color: 0x111111 }));
             hr.position.y = 0.5;
-            const hc = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.6, 16), new THREE.MeshStandardMaterial({color: 0x111111}));
+            const hc = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.6, 16), new THREE.MeshStandardMaterial({ color: 0x111111 }));
             hc.position.y = 0.8;
             const hatGroup = new THREE.Group();
             hatGroup.add(hr); hatGroup.add(hc);
             hatGroup.visible = false;
             hG.add(hatGroup);
-            
+
             const sG = new THREE.Group();
-            const sg1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.05), new THREE.MeshStandardMaterial({color: 0x050505}));
+            const sg1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.05), new THREE.MeshStandardMaterial({ color: 0x050505 }));
             sg1.position.set(-0.16, 0.15, 0.36);
-            const sg2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.05), new THREE.MeshStandardMaterial({color: 0x050505}));
+            const sg2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.05), new THREE.MeshStandardMaterial({ color: 0x050505 }));
             sg2.position.set(0.16, 0.15, 0.36);
-            const sg3 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.05), new THREE.MeshStandardMaterial({color: 0x050505}));
+            const sg3 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.05), new THREE.MeshStandardMaterial({ color: 0x050505 }));
             sg3.position.set(0, 0.15, 0.36);
             sG.add(sg1); sG.add(sg2); sG.add(sg3);
             sG.visible = false;
@@ -2136,11 +3249,18 @@
             const iGr = createGrenade(); iGr.visible = false; eq.add(iGr);
             const iVX = createVXTool(); iVX.visible = false; eq.add(iVX);
 
+            const fl = new THREE.SpotLight(0xffeedd, 0, 80, 0.4, 0.5, 1);
+            fl.position.set(0, 3, 0.5);
+            fl.target.position.set(0, 3, 20);
+            fl.castShadow = PERF.enableShadows;
+            group.add(fl);
+            group.add(fl.target);
+
             return {
                 group, torso, leftArm: lA, rightArm: rA, leftLeg: lL, rightLeg: rL, headGroup: hG,
                 nametagSprite: ns, explosionData: null, equipped: null,
                 itemWhip: iW, itemCake: iC, itemGun: iG, itemGrenade: iGr, itemVX: iVX,
-                itemHat: hatGroup, itemShades: sG,
+                itemHat: hatGroup, itemShades: sG, flashlight: fl,
                 actionTimer: 0, isTrunchbull: isT
             };
         }
@@ -2913,6 +4033,8 @@
                 if (!isMobile) document.getElementById('instructions').style.display = 'block';
                 document.getElementById('chat-container').style.display = 'flex';
                 document.getElementById('hotbar').style.display = 'flex';
+                let hudRef = document.getElementById('hud-bottom-left');
+                if (hudRef) hudRef.style.display = 'flex';
                 document.getElementById('invite-display').innerText = "CODE: " + code;
                 document.getElementById('slot-name').innerText = isTrunchbull ? "Whip" : "Cake";
 
@@ -2927,6 +4049,7 @@
                 scene.add(localAvatar.group);
 
                 initFpsWeapon();
+                initMinimap();
                 updateMapContext();
                 gameActive = true;
                 updateCoinDisplay();
@@ -2947,6 +4070,15 @@
             const payload = { type: 'admin_cmd', action, data, target: tgt };
             if (tgt === 'all' || tgt === 'self') processAdminCmd(payload);
             broadcast(payload);
+        }
+
+        function syncGrenadeSpamButton() {
+            const btn = document.getElementById('admin-toggle-grenade-spam');
+            if (!btn) return;
+            btn.textContent = noGrenadeCooldown ? 'Disable Grenade Spam' : 'Enable Grenade Spam';
+            btn.style.background = noGrenadeCooldown
+                ? 'linear-gradient(135deg,#33cc66,#147a33)'
+                : 'linear-gradient(135deg,#ffcc33,#cc7a00)';
         }
 
         function processAdminCmd(cmd) {
@@ -2979,10 +4111,15 @@
                     spawnExplosionFx(p, inventory.biggerBoom ? 1.35 : 1.0);
                     playExplosionSound();
                 }
+            } else if (cmd.action === 'set_grenade_spam') {
+                noGrenadeCooldown = !!cmd.data?.enabled;
+                syncGrenadeSpamButton();
+                addSystemChat(noGrenadeCooldown ? '💣 Grenade spam enabled.' : '💣 Grenade spam disabled.');
             }
         }
 
         function isDevUser() {
+            if (localStorage.getItem('R6_DEV_COMP') === 'true') return true;
             return (username || '').toLowerCase() === 'dev' || (username || '').includes('[DEV]');
         }
 
@@ -3031,7 +4168,7 @@
             if (document.getElementById('admin-ui')) document.getElementById('admin-ui').style.display = 'flex';
 
             if (!isMobile) {
-                try { document.exitPointerLock(); } catch (e) {}
+                try { document.exitPointerLock(); } catch (e) { }
             }
 
             const coinInput = document.getElementById('admin-coin-input');
@@ -3044,13 +4181,14 @@
                 for (const pid in remotePlayers) {
                     const sel = document.createElement('option');
                     sel.value = pid;
-                    sel.textContent = remotePlayers[pid].name + ' (' + pid.substring(0,4) + ')';
+                    sel.textContent = remotePlayers[pid].name + ' (' + pid.substring(0, 4) + ')';
                     targetSelect.appendChild(sel);
                 }
                 if (targetSelect.querySelector(`option[value="${currentVal}"]`)) targetSelect.value = currentVal;
             }
 
             syncAdminGrantCheckboxes();
+            syncGrenadeSpamButton();
         }
 
         function closeAdminPanel() {
@@ -3096,10 +4234,10 @@
                 const d = parseFloat(document.getElementById('vx-d').value) || 2;
                 const col = document.getElementById('vx-col').value;
                 const move = document.getElementById('vx-move').checked;
-                
+
                 let fd = fpsMode ? new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize() : getPlayerForwardDir();
-                const origin = localAvatar.group.position.clone().add(new THREE.Vector3(0, 2, 0)).addScaledVector(fd, 4 + Math.max(w,d)/2);
-                
+                const origin = localAvatar.group.position.clone().add(new THREE.Vector3(0, 2, 0)).addScaledVector(fd, 4 + Math.max(w, d) / 2);
+
                 const rx = parseFloat(document.getElementById('vx-rx')?.value) || 0;
                 const ry = parseFloat(document.getElementById('vx-ry')?.value) || 0;
                 const rz = parseFloat(document.getElementById('vx-rz')?.value) || 0;
@@ -3133,10 +4271,19 @@
                 });
             });
 
+            document.getElementById('admin-ck-night')?.addEventListener('change', (e) => {
+                sendAdminAction('set_time', null);
+            });
+
             const spawnBtn = document.getElementById('admin-spawn-npcs');
             if (spawnBtn) spawnBtn.addEventListener('click', () => {
                 if (!gameActive || isDead) return;
                 summonNpcs(false, null);
+            });
+
+            const grenadeSpamBtn = document.getElementById('admin-toggle-grenade-spam');
+            if (grenadeSpamBtn) grenadeSpamBtn.addEventListener('click', () => {
+                sendAdminAction('set_grenade_spam', { enabled: !noGrenadeCooldown });
             });
 
             const boomBtn = document.getElementById('admin-test-boom');
@@ -3225,11 +4372,16 @@
 
         function handleFire() {
             if (!gameActive || isPaused || chatFocused || isDead || shopOpen || adminOpen) return;
-            if (localAvatar.equipped && localAvatar.actionTimer <= 0) {
+            if (!localAvatar.equipped) return;
+
+            const grenadeSpamActive = localAvatar.equipped === 'grenade' && noGrenadeCooldown;
+            if (localAvatar.actionTimer > 0 && !grenadeSpamActive) return;
+
+            if (localAvatar.equipped) {
                 if (localAvatar.equipped === 'gun') {
                     fireBullet();
                 } else if (localAvatar.equipped === 'grenade' && playerState !== STATE.SIT) {
-                    localAvatar.actionTimer = 1.0;
+                    localAvatar.actionTimer = grenadeSpamActive ? 0 : 1.0;
                     const grenadeData = createGrenadeThrowData();
                     spawnGrenade(grenadeData);
                     broadcast({ type: 'action', id: myPeerId, action: 'grenade', grenade: grenadeData });
@@ -3254,6 +4406,7 @@
             if (e.key.toLowerCase() === 'o') { toggleFpsMode(); return; }
             if (e.key.toLowerCase() === 'e') { handleInteract(); return; }
             if (e.key.toLowerCase() === 'g') { summonNpcs(false, null); return; }
+            if (e.key.toLowerCase() === 'm') { toggleMinimap(); return; }
         });
 
         document.addEventListener('mousedown', (e) => {
@@ -3350,7 +4503,7 @@
         });
 
         let shiftLock = false, rightClickDown = false;
-        const keys = { w: false, a: false, s: false, d: false, space: false };
+        const keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
         let camDist = 12, camYaw = 0, camPitch = 0, smoothCamDist = 12;
 
         window.addEventListener('keydown', (e) => {
@@ -3358,21 +4511,31 @@
             if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
             const k = e.key.toLowerCase();
             if (keys.hasOwnProperty(k)) keys[k] = true;
+            if (e.key === 'Shift') keys.shift = true;
             if (e.code === 'Space') {
                 keys.space = true;
                 e.preventDefault();
             }
-            if (e.key === 'Shift' && !actionMode) toggleShiftLock();
+            if (e.key === 'v' && !actionMode) toggleShiftLock();
+            if (e.key.toLowerCase() === 'f' && localAvatar && localAvatar.flashlight) {
+                localAvatar.flashlight.intensity = localAvatar.flashlight.intensity > 0 ? 0 : 3;
+                playEquipSound();
+            }
         });
 
         window.addEventListener('keyup', (e) => {
             const k = e.key.toLowerCase();
             if (keys.hasOwnProperty(k)) keys[k] = false;
+            if (e.key === 'Shift') keys.shift = false;
             if (e.code === 'Space') keys.space = false;
         });
 
         window.addEventListener('wheel', (e) => {
             if (!gameActive || isPaused || chatFocused || shopOpen || fpsMode || adminOpen) return;
+            if (minimapVisible) {
+                updateMinimapZoom(e.deltaY > 0 ? -0.5 : 0.5);
+                return;
+            }
             camDist += e.deltaY * 0.01;
             camDist = Math.max(2, Math.min(40, camDist));
         });
@@ -3555,6 +4718,17 @@
             btnE('btn-fps', () => toggleFpsMode());
             btnE('btn-summon', () => summonNpcs(false, null));
             btnE('btn-admin', () => { if (adminDevEnabled) toggleAdminPanel(); });
+            btnE('btn-slot4', () => { if (isDevUser()) equipItem(4); });
+
+            // Minimap toggle for mobile
+            if (document.getElementById('minimap-toggle')) {
+                document.getElementById('minimap-toggle').addEventListener('click', toggleMinimap);
+            }
+            if (document.getElementById('minimap-zoom')) {
+                document.getElementById('minimap-zoom').addEventListener('click', () => {
+                    minimapZoom = minimapZoom >= 2 ? 0.5 : minimapZoom + 0.5;
+                });
+            }
 
             let zI = null, zO = null;
             btnE('btn-zoom-in', () => {
@@ -3581,13 +4755,26 @@
         const gravity = 50;
         let isGrounded = false, playerState = STATE.IDLE;
 
-        function getGroundHeight(x, z) {
+        function getGroundHeight(x, z, checkY = 1000) {
             if (currentMap === 'hall') {
                 if (x > -25 && x < 25 && z > -69 && z < -47) return 3;
                 return 0;
             } else {
-                if (x > POOL_CX - 10 && x < POOL_CX + 10 && z > POOL_CZ - 10 && z < POOL_CZ + 10) return -10;
-                return 0;
+                let maxH = -10;
+                let isPool = (x > POOL_CX - 10 && x < POOL_CX + 10 && z > POOL_CZ - 10 && z < POOL_CZ + 10);
+                if (!isPool) maxH = 0;
+
+                if (window.parkourPlatforms) {
+                    for (let pt of window.parkourPlatforms) {
+                        if (Math.abs(x - pt.position.x) < 1.7 && Math.abs(z - pt.position.z) < 1.7) {
+                            if (checkY >= pt.position.y) maxH = Math.max(maxH, pt.position.y + 0.25);
+                        }
+                    }
+                }
+                if (x > POOL_CX - 1.5 && x < POOL_CX + 1.5 && z > POOL_CZ - 14 && z < POOL_CZ - 6) {
+                    if (checkY >= 24) maxH = Math.max(maxH, 24.7);
+                }
+                return maxH;
             }
         }
 
@@ -3602,7 +4789,7 @@
                     p.mesh.rotation.x += p.rotVel.x * dt;
                     p.mesh.rotation.y += p.rotVel.y * dt;
                     p.mesh.rotation.z += p.rotVel.z * dt;
-                    const gy = getGroundHeight(p.mesh.position.x, p.mesh.position.z);
+                    const gy = getGroundHeight(p.mesh.position.x, p.mesh.position.z, p.mesh.position.y);
                     if (p.mesh.position.y <= gy + 0.5) {
                         p.mesh.position.y = gy + 0.5;
                         p.vel.set(0, 0, 0);
@@ -3649,7 +4836,6 @@
             const nE = inPH && (px < POOL_CX - 8.5 || px > POOL_CX + 8.5 || pz < POOL_CZ - 8.5 || pz > POOL_CZ + 8.5);
 
             let md = new THREE.Vector3();
-            const asm = (actionMode ? 1.15 : 1) * (inventory.speedBoost ? 1.2 : 1);
 
             if (!isPaused && !chatFocused) {
                 let mx = 0, mz = 0;
@@ -3663,8 +4849,15 @@
                 }
                 md.set(mx, 0, mz);
             }
-
             if (md.lengthSq() > 1) md.normalize();
+
+            let sprinting = keys.shift && (md.lengthSq() > 0.01) && stamina > 0 && !inW && !onL;
+            if (sprinting) stamina -= dt * 30;
+            else stamina = Math.min(100, stamina + dt * 15);
+            let sFill = document.getElementById('stamina-fill');
+            if (sFill) sFill.style.width = stamina + '%';
+
+            const asm = (actionMode ? 1.15 : 1) * (inventory.speedBoost ? 1.2 : 1) * (sprinting ? 1.8 : 1);
             md.applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
 
             if (onL && (keys.w || (isMobile && mobileInput.moveY < -0.3)) && !isPaused) {
@@ -3692,6 +4885,13 @@
                 }
             }
             else {
+                if (window.jumpPads) {
+                    for (let p of window.jumpPads) {
+                        if (Math.abs(localAvatar.group.position.x - p.position.x) < 2 && Math.abs(localAvatar.group.position.z - p.position.z) < 2 && localAvatar.group.position.y <= p.position.y + 0.6) {
+                            if (vel.y < 45) vel.y = 45;
+                        }
+                    }
+                }
                 vel.x = md.x * moveSpeed * asm;
                 vel.z = md.z * moveSpeed * asm;
                 if (isGrounded) {
@@ -3713,7 +4913,7 @@
             localAvatar.group.position.z += vel.z * dt;
             localAvatar.group.position.y += vel.y * dt;
 
-            const ngy = getGroundHeight(localAvatar.group.position.x, localAvatar.group.position.z);
+            const ngy = getGroundHeight(localAvatar.group.position.x, localAvatar.group.position.z, localAvatar.group.position.y);
 
             if (currentMap === 'hall') {
                 localAvatar.group.position.x = Math.max(-68, Math.min(68, localAvatar.group.position.x));
@@ -3868,16 +5068,16 @@
                 const bLocalCheck = (av === localAvatar) ? window.devFx : av.devFx;
                 if (av.itemHat) av.itemHat.visible = !!bLocalCheck?.hat;
                 if (av.itemShades) av.itemShades.visible = !!bLocalCheck?.hat;
-                
+
                 const hasTrail = !!bLocalCheck?.trail;
                 if (hasTrail && ps !== STATE.IDLE && ps !== STATE.SIT) {
                     if (av.group.position.distanceToSquared(av.__lastTrail || av.group.position) > 0.3 || !av.__lastTrail) {
                         av.__lastTrail = av.group.position.clone();
-                        const pt = new THREE.Mesh(new THREE.SphereGeometry(0.18, 5, 5), new THREE.MeshBasicMaterial({ color: 0xff00ff, transparent:true, opacity:0.8 }));
+                        const pt = new THREE.Mesh(new THREE.SphereGeometry(0.18, 5, 5), new THREE.MeshBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.8 }));
                         pt.position.copy(av.group.position);
                         pt.position.y += 0.5 + Math.random();
                         scene.add(pt);
-                        bullets.push({ mesh: pt, life: 1.5, maxLife: 1.5, isParticle: true, velocity: new THREE.Vector3((Math.random()-0.5)*3, 1.5, (Math.random()-0.5)*3) });
+                        bullets.push({ mesh: pt, life: 1.5, maxLife: 1.5, isParticle: true, velocity: new THREE.Vector3((Math.random() - 0.5) * 3, 1.5, (Math.random() - 0.5) * 3) });
                     }
                 }
             };
@@ -4029,6 +5229,7 @@
             updateSpeechBubbles(dt);
             updateNpcs(dt);
             updateAdaptiveResolution(dt);
+            renderMinimap();
 
             renderer.render(scene, camera);
 
@@ -4065,4 +5266,5 @@
         animate();
     </script>
 </body>
+
 </html>
