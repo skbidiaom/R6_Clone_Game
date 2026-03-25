@@ -10,6 +10,14 @@
         href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700;900&display=swap"
         rel="stylesheet">
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
         * {
             font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', cursive !important;
             box-sizing: border-box;
@@ -1035,19 +1043,25 @@
         }
 
         /* === RESPONSIVE: bigger iPad === */
-        @media (min-width: 768px) {
-            #joystick-zone { width: 200px; height: 200px; }
-            #joystick-base { width: 190px; height: 190px; }
-            #joystick-stick { width: 70px; height: 70px; left: 60px; top: 60px; }
-            #btn-jump { width: 96px; height: 96px; font-size: 34px; bottom: 32px; right: 32px; }
-            #btn-fire { width: 80px; height: 80px; font-size: 26px; bottom: 146px; right: 28px; }
-            #btn-interact { width: 72px; height: 72px; font-size: 20px; bottom: 140px; right: 124px; }
-            #btn-slot1 { width: 64px; height: 64px; bottom: 250px; right: 122px; }
-            #btn-slot2 { width: 64px; height: 64px; bottom: 250px; right: 46px; }
-            #btn-slot3 { width: 60px; height: 60px; bottom: 330px; right: 86px; }
-            #btn-slot4 { width: 60px; height: 60px; bottom: 408px; right: 86px; }
-            #btn-zoom-in  { bottom: 100px; left: 225px; width: 50px; height: 50px; }
-            #btn-zoom-out { bottom: 40px;  left: 225px; width: 50px; height: 50px; }
+        @media (min-width: 768px), (min-height: 768px) {
+            #joystick-zone { width: 220px; height: 220px; }
+            #joystick-base { width: 210px; height: 210px; }
+            #joystick-stick { width: 80px; height: 80px; left: 70px; top: 70px; }
+            #btn-jump { width: 100px; height: 100px; font-size: 36px; bottom: 36px; right: 36px; }
+            #btn-fire { width: 88px; height: 88px; font-size: 28px; bottom: 156px; right: 32px; }
+            #btn-interact { width: 76px; height: 76px; font-size: 22px; bottom: 150px; right: 130px; }
+            #btn-slot1 { width: 68px; height: 68px; bottom: 260px; right: 128px; }
+            #btn-slot2 { width: 68px; height: 68px; bottom: 260px; right: 50px; }
+            #btn-slot3 { width: 64px; height: 64px; bottom: 345px; right: 90px; }
+            #btn-slot4 { width: 64px; height: 64px; bottom: 420px; right: 90px; }
+            #btn-zoom-in  { bottom: 110px; left: 245px; width: 54px; height: 54px; font-size: 24px; }
+            #btn-zoom-out { bottom: 44px;  left: 245px; width: 54px; height: 54px; font-size: 24px; }
+            #btn-pause, #btn-chat, #btn-fps, #btn-summon, #btn-admin { width: 56px; height: 56px; font-size: 22px; }
+            #btn-pause { top: 16px; left: 16px; }
+            #btn-chat { top: 16px; left: 82px; }
+            #btn-fps { top: 16px; left: 148px; }
+            #btn-summon { top: 82px; left: 16px; }
+            #btn-admin { top: 82px; left: 82px; }
         }
 
         .ae-num-input::-webkit-inner-spin-button { display:none; }
@@ -1118,6 +1132,22 @@
             #rotate-hint {
                 display: flex;
             }
+        }
+
+        #shiftlock-circle {
+            position: fixed !important;
+            width: 16px !important;
+            height: 16px !important;
+            background: rgba(255,255,255,0.85) !important;
+            border-radius: 50% !important;
+            box-shadow: 0 0 8px rgba(255,255,255,0.6) !important;
+            z-index: 9999 !important;
+            pointer-events: none !important;
+            margin: auto !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
         }
     </style>
 </head>
@@ -1211,6 +1241,28 @@
                         <button id="pause-change-name-btn" style="background:linear-gradient(135deg,#cc9900,#886600);border:none;color:#fff;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;white-space:nowrap;">1200 🪙</button>
                     </div>
                     <div id="pause-name-error" style="font-size:11px;color:#ff5555;min-height:14px;margin-top:4px;font-family:'Orbitron',sans-serif;"></div>
+                </div>
+                <!-- Mobile Settings -->
+                <div id="mobile-settings-section" style="margin-top:14px;border-top:1px solid #222;padding-top:12px;display:none;">
+                    <div style="font-family:'Orbitron',sans-serif;font-size:9px;color:#555;letter-spacing:2px;margin-bottom:7px;">MOBILE CONTROLS</div>
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:11px;color:#aaa;margin-bottom:4px;">Control Size: <span id="control-size-val">100%</span></div>
+                        <input type="range" id="control-size-slider" min="0.5" max="2" step="0.1" value="1" style="width:100%;accent-color:#3399ff;">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:11px;color:#aaa;margin-bottom:4px;">Look Sensitivity: <span id="look-sens-val">100%</span></div>
+                        <input type="range" id="look-sens-slider" min="0.25" max="3" step="0.25" value="1" style="width:100%;accent-color:#3399ff;">
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <label style="font-size:11px;color:#aaa;display:flex;align-items:center;gap:4px;cursor:pointer;">
+                            <input type="checkbox" id="invert-look-check" style="accent-color:#3399ff;">
+                            Invert Look
+                        </label>
+                        <label style="font-size:11px;color:#aaa;display:flex;align-items:center;gap:4px;cursor:pointer;">
+                            <input type="checkbox" id="invert-joystick-check" style="accent-color:#3399ff;">
+                            Invert Joystick
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -1574,13 +1626,14 @@
             <h2 style="color:#44ff88;font-family:'Orbitron',sans-serif;letter-spacing:2px;margin-top:0;">🌿 John's Multiplier Shop</h2>
             <p style="color:#336633;font-size:11px;margin-top:-10px;margin-bottom:10px;font-family:'Orbitron',sans-serif;">BOOST YOUR ZOMBIE HUNTING</p>
             <div style="color:#44ff88;font-size:15px;font-family:'Orbitron',sans-serif;margin-bottom:14px;">💰 Coins: <span id="john-coin-count">100</span></div>
-            <div id="john-multiplier-display" style="background:rgba(0,40,0,0.6);border:1px solid #226622;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#88ff99;font-family:'Orbitron',sans-serif;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;">
+            <div id="john-multiplier-display" style="background:rgba(0,40,0,0.6);border:1px solid #226622;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#88ff99;font-family:'Orbitron',sans-serif;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center;">
                 <div><div style="font-size:9px;color:#446644;letter-spacing:1px;margin-bottom:3px;">COIN MULT</div><div id="jshop-coin-mult-display">×1</div></div>
                 <div><div style="font-size:9px;color:#446644;letter-spacing:1px;margin-bottom:3px;">SPEED MULT</div><div id="jshop-speed-mult-display">×1</div></div>
                 <div><div style="font-size:9px;color:#446644;letter-spacing:1px;margin-bottom:3px;">JUMP MULT</div><div id="jshop-jump-mult-display">×1</div></div>
+                <div><div style="font-size:9px;color:#446644;letter-spacing:1px;margin-bottom:3px;">DBL JUMP</div><div id="jshop-dbljump-mult-display">×1</div></div>
             </div>
-            <div id="john-shop-items-container"></div>
-            <button id="close-john-shop-btn" class="menu-btn" style="background:linear-gradient(135deg,#226622,#113311);margin-top:14px;font-size:16px;width:100%;">Close</button>
+            <div id="john-shop-items-container" style="max-height:40vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#226622 #111;"></div>
+            <button id="close-john-shop-btn" class="menu-btn" style="background:linear-gradient(135deg,#226622,#113311);margin-top:16px;font-size:18px;width:100%;padding:14px;">Close</button>
         </div>
     </div>
 
@@ -1768,19 +1821,21 @@
         </div>
     </div>
 
-    <div id="hotbar">
-        <div class="hotbar-slot" id="slot-1" style="display:none;"><span>1</span>Pistol</div>
-        <div class="hotbar-slot" id="slot-2" style="display:none;"><span>2</span>Boom</div>
-        <div class="hotbar-slot" id="slot-3" style="display:none; border-color:#d900ff; box-shadow:0 0 10px #d900ff;">
-            <span>3</span>VXTOOL
-        </div>
-        <div class="hotbar-slot" id="slot-4" style="display:none; border-color:#00ccff; box-shadow:0 0 10px #00ccff;">
-            <span>4</span>✈ FLY
+        <div id="hotbar">
+            <div class="hotbar-slot" id="slot-1" style="display:none;"><span>1</span>Pistol</div>
+            <div class="hotbar-slot" id="slot-2" style="display:none;"><span>2</span>Boom</div>
+            <div class="hotbar-slot" id="slot-3" style="display:none; border-color:#d900ff; box-shadow:0 0 10px #d900ff;">
+                <span>3</span>VXTOOL
+            </div>
+            <div class="hotbar-slot" id="slot-4" style="display:none; border-color:#00ccff; box-shadow:0 0 10px #00ccff;">
+                <span>4</span>✈ FLY
+            </div>
         </div>
 
-    <div id="mode-indicator" class="normal">Normal Mode</div>
+        <div id="mode-indicator" class="normal">Normal Mode</div>
     <div id="ammo-display"><span class="ammo-label">AMMO</span><span id="ammo-count">∞</span></div>
     <div id="vignette-overlay"></div>
+    <div id="shiftlock-circle" style="display:none;"></div>
 
     <div id="crosshair"></div>
 
@@ -1860,9 +1915,10 @@
             /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
             ('ontouchstart' in window && window.innerWidth < 1200);
 
+        const isTablet = /iPad|Tablet|iPad/i.test(navigator.userAgent) || (window.innerWidth >= 768 && window.innerHeight >= 768);
         const PERF = {
-            mobileLowPower: isMobile,
-            pixelRatio: isMobile ? Math.min(1.1, window.devicePixelRatio || 1) : Math.min(2, window.devicePixelRatio || 1),
+            mobileLowPower: isMobile && !isTablet,
+            pixelRatio: isTablet ? Math.min(2, window.devicePixelRatio || 2) : (isMobile ? Math.min(1.5, window.devicePixelRatio || 1.5) : Math.min(2, window.devicePixelRatio || 2)),
             enableShadows: !isMobile,
             enableSoftShadows: !isMobile,
             enableFog: !isMobile,
@@ -1870,15 +1926,15 @@
             enableExtraLights: !isMobile,
             enableParticles: !isMobile,
             enableShells: !isMobile,
-            maxSpeechBubbles: isMobile ? 4 : 12,
-            maxNPCs: isMobile ? 24 : 120,
-            hallChairRows: isMobile ? 8 : 14,
-            hallChairCols: isMobile ? 10 : 16,
-            treeCount: isMobile ? 10 : 30,
-            rockCount: isMobile ? 6 : 15,
-            flowerCount: isMobile ? 8 : 20,
-            hallLightsStep: isMobile ? 40 : 20,
-            targetFPS: isMobile ? 30 : 60
+            maxSpeechBubbles: isMobile ? 6 : 12,
+            maxNPCs: isMobile ? 40 : 120,
+            hallChairRows: isMobile ? 10 : 14,
+            hallChairCols: isMobile ? 12 : 16,
+            treeCount: isMobile ? 15 : 30,
+            rockCount: isMobile ? 10 : 15,
+            flowerCount: isMobile ? 12 : 20,
+            hallLightsStep: isMobile ? 30 : 20,
+            targetFPS: isTablet ? 60 : (isMobile ? 45 : 60)
         };
 
         let mobileAdaptiveScale = isMobile ? 0.9 : 1.0;
@@ -1924,6 +1980,22 @@
                             musicBtn.style.background = 'linear-gradient(135deg,#555,#333)';
                         }
                     });
+                }
+            }
+        }
+
+        function toggleMusic() {
+            if (!musicStarted) initAudio();
+            musicEnabled = !musicEnabled;
+            const bgMusic = document.getElementById('bg-music');
+            const musicBtn = document.getElementById('music-btn');
+            if (bgMusic) {
+                if (musicEnabled) {
+                    bgMusic.play().catch(e => console.log(e));
+                    if (musicBtn) { musicBtn.innerText = 'Music: ON'; musicBtn.style.background = 'linear-gradient(135deg,#aa33aa,#771177)'; }
+                } else {
+                    bgMusic.pause();
+                    if (musicBtn) { musicBtn.innerText = 'Music: OFF'; musicBtn.style.background = 'linear-gradient(135deg,#555,#333)'; }
                 }
             }
         }
@@ -2274,7 +2346,7 @@
         let playerSkinColor = 0xffe0bd, playerShirtColor = 0x222222, playerPantColor = 0x3b5998;
 
         // Multiplier state (John's shop)
-        const multipliers = { coin: 1, speed: 1, jump: 1 };
+        const multipliers = { coin: 1, speed: 1, jump: 1, dblJump: 1 };
 
         // -- AUTH SYSTEM (localStorage, never in code) --
         const DEV_USERNAMES = []; // unlocked via console only
@@ -2457,6 +2529,12 @@
         let fpsWeaponGroup = null, fpsWeaponScene = null, fpsWeaponCamera = null, fpsWeaponRenderer = null;
 
         const mobileInput = { moveX: 0, moveY: 0 };
+        const mobileSettings = {
+            controlSize: 1.0,
+            lookSensitivity: 1.0,
+            invertLook: false,
+            invertJoystick: false
+        };
         let joystickActive = false, joystickTouchId = null, lookTouchId = null, lastLookX = 0, lastLookY = 0;
 
         let coins = 100;
@@ -2501,13 +2579,15 @@
 
         // John's Multiplier Shop items
         const JOHN_ITEMS = [
-            { id: 'coinMult2',  label: '×2 Coin Drops',   icon: '🪙', desc: 'Zombies drop 2× coins.',       price: 80,  mult: 'coin',  val: 2  },
-            { id: 'coinMult3',  label: '×3 Coin Drops',   icon: '🪙', desc: 'Zombies drop 3× coins.',       price: 200, mult: 'coin',  val: 3  },
-            { id: 'coinMult5',  label: '×5 Coin Drops',   icon: '🪙', desc: 'Zombies drop 5× coins!',      price: 500, mult: 'coin',  val: 5  },
-            { id: 'speed15',    label: '×1.5 Speed',      icon: '⚡', desc: '+50% permanent move speed.',   price: 120, mult: 'speed', val: 1.5},
-            { id: 'speed2',     label: '×2 Speed',        icon: '⚡', desc: 'Double movement speed.',       price: 300, mult: 'speed', val: 2  },
-            { id: 'jump15',     label: '×1.5 Jump',       icon: '🦘', desc: 'Jump 50% higher.',             price: 100, mult: 'jump',  val: 1.5},
-            { id: 'jump2',      label: '×2 Jump',         icon: '🦘', desc: 'Double jump height.',          price: 250, mult: 'jump',  val: 2  },
+            { id: 'coinMult2',  label: '×2 Coin Drops',     icon: '🪙', desc: 'Zombies drop 2× coins.',         price: 80,  mult: 'coin',    val: 2  },
+            { id: 'coinMult3',  label: '×3 Coin Drops',     icon: '🪙', desc: 'Zombies drop 3× coins.',         price: 200, mult: 'coin',    val: 3  },
+            { id: 'coinMult5',  label: '×5 Coin Drops',     icon: '🪙', desc: 'Zombies drop 5× coins!',        price: 500, mult: 'coin',    val: 5  },
+            { id: 'speed15',    label: '×1.2 Speed',        icon: '⚡', desc: '+20% permanent move speed.',     price: 120, mult: 'speed',   val: 1.2},
+            { id: 'speed2',     label: '×1.4 Speed',        icon: '⚡', desc: '+40% movement speed.',          price: 300, mult: 'speed',   val: 1.4},
+            { id: 'jump15',     label: '×1.2 Jump',         icon: '🦘', desc: 'Jump 20% higher.',               price: 100, mult: 'jump',    val: 1.2},
+            { id: 'jump2',      label: '×1.4 Jump',         icon: '🦘', desc: 'Jump 40% higher.',               price: 250, mult: 'jump',    val: 1.4},
+            { id: 'dblJump15',  label: '×1.2 Dbl Jump',     icon: '🦘', desc: 'Double jump 20% stronger.',      price: 120, mult: 'dblJump', val: 1.2},
+            { id: 'dblJump2',   label: '×1.4 Dbl Jump',     icon: '🦘', desc: 'Double jump 40% stronger.',      price: 280, mult: 'dblJump', val: 1.4},
         ];
         const johnInventory = {};
 
@@ -3044,11 +3124,11 @@
         camera.position.set(0, 4, 22);
 
         const renderer = new THREE.WebGLRenderer({
-            antialias: !isMobile,
-            powerPreference: isMobile ? "low-power" : "high-performance",
+            antialias: isTablet || !isMobile,
+            alpha: false,
+            powerPreference: 'high-performance',
             stencil: false,
-            depth: true,
-            logarithmicDepthBuffer: false,
+            depth: true
         });
         renderer.setPixelRatio(PERF.pixelRatio);
         renderer.setSize(window.innerWidth * mobileAdaptiveScale, window.innerHeight * mobileAdaptiveScale, false);
@@ -3056,12 +3136,13 @@
         renderer.domElement.style.height = window.innerHeight + 'px';
         renderer.shadowMap.enabled = PERF.enableShadows;
         renderer.shadowMap.type = PERF.enableSoftShadows ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap;
-        renderer.shadowMap.autoUpdate = false;       // PC: only update shadows when needed
+        renderer.shadowMap.autoUpdate = false;
         renderer.shadowMap.needsUpdate = true;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = isMobile ? 1.0 : 1.1;
-        renderer.info.autoReset = false;             // manual reset — avoids GC churn
+        renderer.toneMappingExposure = isMobile ? 1.05 : 1.1;
+        renderer.info.autoReset = false;
         renderer.sortObjects = true;
+        renderer.setClearColor(0x87ceeb);
         document.body.appendChild(renderer.domElement);
 
         // Request shadow map update every 3 frames on PC (saves ~2ms/frame)
@@ -5625,6 +5706,7 @@
             document.getElementById('jshop-coin-mult-display').textContent = '×' + multipliers.coin;
             document.getElementById('jshop-speed-mult-display').textContent = '×' + multipliers.speed;
             document.getElementById('jshop-jump-mult-display').textContent = '×' + multipliers.jump;
+            document.getElementById('jshop-dbljump-mult-display').textContent = '×' + multipliers.dblJump;
             const jc = document.getElementById('john-coin-count');
             if (jc) jc.textContent = coins;
         }
@@ -6451,6 +6533,7 @@
 
             if (!shiftLock) {
                 document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('shiftlock-circle').style.display = 'none';
             } else {
                 document.getElementById('crosshair').className = '';
             }
@@ -7709,6 +7792,69 @@
             addSystemChat('✏ Username changed to: ' + username);
         });
 
+        // Mobile settings handlers
+        const controlSizeSlider = document.getElementById('control-size-slider');
+        const controlSizeVal = document.getElementById('control-size-val');
+        const lookSensSlider = document.getElementById('look-sens-slider');
+        const lookSensVal = document.getElementById('look-sens-val');
+        const invertLookCheck = document.getElementById('invert-look-check');
+        const invertJoystickCheck = document.getElementById('invert-joystick-check');
+        const mobileSettingsSection = document.getElementById('mobile-settings-section');
+
+        if (isMobile) {
+            mobileSettingsSection.style.display = 'block';
+            const savedMobile = JSON.parse(localStorage.getItem('R6M_mobileSettings') || '{}');
+            if (savedMobile.controlSize) mobileSettings.controlSize = savedMobile.controlSize;
+            if (savedMobile.lookSensitivity) mobileSettings.lookSensitivity = savedMobile.lookSensitivity;
+            if (savedMobile.invertLook) mobileSettings.invertLook = savedMobile.invertLook;
+            if (savedMobile.invertJoystick) mobileSettings.invertJoystick = savedMobile.invertJoystick;
+
+            controlSizeSlider.value = mobileSettings.controlSize;
+            controlSizeVal.textContent = Math.round(mobileSettings.controlSize * 100) + '%';
+            lookSensSlider.value = mobileSettings.lookSensitivity;
+            lookSensVal.textContent = Math.round(mobileSettings.lookSensitivity * 100) + '%';
+            invertLookCheck.checked = mobileSettings.invertLook;
+            invertJoystickCheck.checked = mobileSettings.invertJoystick;
+        }
+
+        controlSizeSlider.addEventListener('input', () => {
+            mobileSettings.controlSize = parseFloat(controlSizeSlider.value);
+            controlSizeVal.textContent = Math.round(mobileSettings.controlSize * 100) + '%';
+            localStorage.setItem('R6M_mobileSettings', JSON.stringify(mobileSettings));
+            // Update control sizes
+            const scale = mobileSettings.controlSize;
+            const jZ = document.getElementById('joystick-zone');
+            const jS = document.getElementById('joystick-stick');
+            const jB = document.getElementById('joystick-base');
+            const baseR = (isTablet ? 75 : 55) * scale;
+            const jR = baseR;
+            const jCenter = jR + 5;
+            jZ.style.width = jR * 2 + 'px';
+            jZ.style.height = jR * 2 + 'px';
+            jB.style.width = (jR * 2 - 10) + 'px';
+            jB.style.height = (jR * 2 - 10) + 'px';
+            jS.style.width = (scale * (isTablet ? 80 : 58)) + 'px';
+            jS.style.height = (scale * (isTablet ? 80 : 58)) + 'px';
+            jS.style.left = jCenter + 'px';
+            jS.style.top = jCenter + 'px';
+        });
+
+        lookSensSlider.addEventListener('input', () => {
+            mobileSettings.lookSensitivity = parseFloat(lookSensSlider.value);
+            lookSensVal.textContent = Math.round(mobileSettings.lookSensitivity * 100) + '%';
+            localStorage.setItem('R6M_mobileSettings', JSON.stringify(mobileSettings));
+        });
+
+        invertLookCheck.addEventListener('change', () => {
+            mobileSettings.invertLook = invertLookCheck.checked;
+            localStorage.setItem('R6M_mobileSettings', JSON.stringify(mobileSettings));
+        });
+
+        invertJoystickCheck.addEventListener('change', () => {
+            mobileSettings.invertJoystick = invertJoystickCheck.checked;
+            localStorage.setItem('R6M_mobileSettings', JSON.stringify(mobileSettings));
+        });
+
         /* ---------------------------------------------
         AVATAR CUSTOMIZER
         --------------------------------------------- */
@@ -8328,9 +8474,19 @@
             }
         });
 
-        let shiftLock = false, rightClickDown = false;
+        let shiftLock = false, rightClickDown = false, shiftLockKeyDown = false;
         const keys = { w: false, a: false, s: false, d: false, space: false, shift: false, ctrl: false, alt: false };
-        let camDist = 12, camYaw = 0, camPitch = 0, smoothCamDist = 12;
+
+        document.addEventListener('pointerlockchange', () => {
+            const locked = document.pointerLockElement === document.body;
+            if (!locked && shiftLock) {
+                shiftLock = false;
+                document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('shiftlock-circle').style.display = 'none';
+                rightClickDown = false;
+            }
+        });
+        let camDist = 12, camYaw = 0, camPitch = 0, smoothCamDist = 12, smoothAvatarYaw = 0;
 
         window.addEventListener('keydown', (e) => {
             if (isPaused || !gameActive || isDead || chatFocused || shopOpen || adminOpen) return;
@@ -8344,10 +8500,17 @@
                 keys.space = true;
                 e.preventDefault();
             }
-            if (e.key === 'Shift' && !actionMode) toggleShiftLock();
+            if (e.key === 'Shift' && !actionMode && !shiftLockKeyDown) {
+                shiftLockKeyDown = true;
+                toggleShiftLock();
+            }
             if (e.key.toLowerCase() === 'f' && localAvatar && localAvatar.flashlight) {
                 localAvatar.flashlight.intensity = localAvatar.flashlight.intensity > 0 ? 0 : 3;
                 playEquipSound();
+            }
+            if (e.key === 'F3') {
+                e.preventDefault();
+                toggleMusic();
             }
             // Smoke bomb (Q key)
             if (e.key.toLowerCase() === 'q' && inventory.smokeBomb && smokeBombCooldown <= 0 && localAvatar && !isDead) {
@@ -8401,6 +8564,7 @@
             if (e.key === 'Alt') keys.alt = false;
             if (e.key === 'Control') keys.ctrl = false;
             if (e.code === 'Space') keys.space = false;
+            if (e.key === 'Shift') shiftLockKeyDown = false;
         });
 
         window.addEventListener('wheel', (e) => {
@@ -8445,9 +8609,12 @@
                 document.body.requestPointerLock();
                 document.getElementById('crosshair').style.display = 'block';
                 document.getElementById('crosshair').className = '';
+                document.getElementById('shiftlock-circle').style.display = 'block';
+                smoothAvatarYaw = localAvatar.group.rotation.y;
             } else {
                 document.exitPointerLock();
                 document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('shiftlock-circle').style.display = 'none';
                 rightClickDown = false;
             }
         }
@@ -8460,7 +8627,25 @@
             const jS = document.getElementById('joystick-stick');
             const jB = document.getElementById('joystick-base');
             const lZ = document.getElementById('look-zone');
-            const jR = 55; // joystick radius in px
+
+            function updateControlSizes() {
+                const scale = mobileSettings.controlSize;
+                const baseR = (isTablet ? 75 : 55) * scale;
+                const jR = baseR;
+                const jCenter = jR + 5;
+                jZ.style.width = jR * 2 + 'px';
+                jZ.style.height = jR * 2 + 'px';
+                jB.style.width = (jR * 2 - 10) + 'px';
+                jB.style.height = (jR * 2 - 10) + 'px';
+                jS.style.width = (scale * (isTablet ? 80 : 58)) + 'px';
+                jS.style.height = (scale * (isTablet ? 80 : 58)) + 'px';
+                jS.style.left = jCenter + 'px';
+                jS.style.top = jCenter + 'px';
+            }
+            updateControlSizes();
+
+            const baseSize = (isTablet ? 75 : 55) * mobileSettings.controlSize;
+            const jR = baseSize;
             const jCenter = jR + 5; // CSS center offset
 
             // ── FLOATING JOYSTICK ──
@@ -8488,7 +8673,8 @@
                 jS.style.left = (jCenter + dx) + 'px';
                 jS.style.top  = (jCenter + dy) + 'px';
                 mobileInput.moveX = dx / jR;
-                mobileInput.moveY = dy / jR;
+                const invertY = mobileSettings.invertJoystick ? -1 : 1;
+                mobileInput.moveY = -dy / jR * invertY;
             }
 
             jZ.addEventListener('touchstart', e => {
@@ -8543,9 +8729,10 @@
                         const dy = t.clientY - lastLookY;
                         lastLookX = t.clientX;
                         lastLookY = t.clientY;
-                        const sens = fpsMode ? 0.003 : 0.005;
+                        const sens = (fpsMode ? 0.003 : 0.005) * mobileSettings.lookSensitivity;
+                        const invertY = mobileSettings.invertLook ? -1 : 1;
                         camYaw -= dx * sens;
-                        camPitch -= dy * sens;
+                        camPitch += dy * sens * invertY;
                         camPitch = Math.max(-Math.PI/2+0.1, Math.min(Math.PI/2-0.1, camPitch));
                     }
                 }
@@ -8792,7 +8979,7 @@
                     }
                     // Double jump
                     if (inventory.doubleJump && !doubleJumpUsed && keys.space && !isPaused && !chatFocused) {
-                        vel.y = jumpPower * 0.85;
+                        vel.y = jumpPower * 0.85 * multipliers.dblJump;
                         doubleJumpUsed = true;
                         playerState = STATE.JUMP;
                         playJumpSound();
@@ -8943,7 +9130,12 @@
             }
 
             if ((shiftLock || actionMode) && !isPaused) {
-                localAvatar.group.rotation.y = camYaw + Math.PI;
+                const targetYaw = camYaw + Math.PI;
+                let diff = targetYaw - smoothAvatarYaw;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                smoothAvatarYaw += diff * Math.min(1, 12 * dt);
+                localAvatar.group.rotation.y = smoothAvatarYaw;
             } else if (vel.x !== 0 || vel.z !== 0) {
                 const ty = Math.atan2(vel.x, vel.z);
                 let diff = ty - localAvatar.group.rotation.y;
