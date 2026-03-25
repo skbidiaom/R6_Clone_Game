@@ -1505,9 +1505,10 @@
                 <!-- Tabs -->
                 <div style="display:flex;gap:2px;">
                     <button class="adm-tab adm-tab-active" data-tab="adm-tab-tools">⚙ Tools</button>
-                    <button class="adm-tab" data-tab="adm-tab-players">👥 Players</button>
+                    <button class="adm-tab" data-tab="adm-tab-players">👥 players</button>
                     <button class="adm-tab" data-tab="adm-tab-effects">✨ Effects</button>
                     <button class="adm-tab" data-tab="adm-tab-world">🌍 World</button>
+                    <button class="adm-tab" data-tab="adm-tab-draw">🎨 Draw</button>
                 </div>
             </div>
 
@@ -1606,6 +1607,48 @@
                     </div>
                 </div>
 
+                <!-- DRAW -->
+                <div id="adm-tab-draw" class="adm-tab-body" style="display:none;">
+                    <div class="adm-section-title">🖼️ GIANT DRAWING CANVAS</div>
+                    <div style="font-size:12px;color:#666;margin-bottom:10px;">Activate a giant canvas. Press E (interact) to draw on it!</div>
+                    
+                    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                        <button id="draw-activate-btn" class="adm-btn adm-btn-blue" style="flex:1;">🎬 Activate Canvas</button>
+                        <button id="draw-clear-btn" class="adm-btn adm-btn-red">Clear</button>
+                    </div>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                        <div>
+                            <div style="font-size:10px;color:#555;margin-bottom:4px;">Brush Size: <span id="brush-size-val">10</span>px</div>
+                            <input type="range" id="draw-brush-size" min="2" max="50" value="10" style="width:100%;accent-color:#3399ff;">
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:#555;margin-bottom:4px;">Brush Type</div>
+                            <select id="draw-brush-type" style="width:100%;padding:6px;background:#111;color:#eee;border:1px solid #333;border-radius:5px;">
+                                <option value="round">● Round</option>
+                                <option value="square">■ Square</option>
+                                <option value="spray">💨 Spray</option>
+                                <option value="eraser">⬜ Eraser</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size:10px;color:#555;margin-bottom:4px;">Color</div>
+                    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+                        <input type="color" id="draw-color" value="#ff4444" style="width:40px;height:30px;cursor:pointer;">
+                        <div class="color-swatch" data-col="#ff4444" style="width:28px;height:28px;background:#ff4444;border-radius:4px;cursor:pointer;border:2px solid transparent;"></div>
+                        <div class="color-swatch" data-col="#44ff44" style="width:28px;height:28px;background:#44ff44;border-radius:4px;cursor:pointer;border:2px solid transparent;"></div>
+                        <div class="color-swatch" data-col="#4444ff" style="width:28px;height:28px;background:#4444ff;border-radius:4px;cursor:pointer;border:2px solid transparent;"></div>
+                        <div class="color-swatch" data-col="#ffff44" style="width:28px;height:28px;background:#ffff44;border-radius:4px;cursor:pointer;border:2px solid transparent;"></div>
+                        <div class="color-swatch" data-col="#ff44ff" style="width:28px;height:28px;background:#ff44ff;border-radius:4px;cursor:pointer;border:2px solid transparent;"></div>
+                        <div class="color-swatch" data-col="#44ffff" style="width:28px;height:28px;background:#44ffff;border-radius:4px;cursor:pointer;border:2px solid transparent;"></div>
+                        <div class="color-swatch" data-col="#ffffff" style="width:28px;height:28px;background:#ffffff;border-radius:4px;cursor:pointer;border:2px solid transparent;"></div>
+                        <div class="color-swatch" data-col="#000000" style="width:28px;height:28px;background:#000000;border-radius:4px;cursor:pointer;border:2px solid #444;"></div>
+                    </div>
+                    
+                    <div id="draw-status" style="font-size:11px;color:#44ff88;font-family:'Orbitron',sans-serif;"></div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -1640,7 +1683,7 @@
     <div id="shop-hint">🛒 Press E — Tony's Armory</div>
     <div id="john-shop-hint" style="position:absolute;bottom:136px;left:50%;transform:translateX(-50%);color:white;font-size:15px;font-weight:bold;text-shadow:0 0 8px rgba(0,255,100,0.7);display:none;pointer-events:none;z-index:10;background:rgba(0,0,0,0.75);padding:7px 18px;border-radius:20px;border:1px solid rgba(0,200,80,0.5);white-space:nowrap;">🌿 Press E — John's Multiplier Shop</div>
     <div id="zombie-hint" style="position:absolute;bottom:124px;left:50%;transform:translateX(-50%);color:#ff6666;font-size:15px;font-weight:bold;text-shadow:0 0 8px rgba(255,0,0,0.7);display:none;pointer-events:none;z-index:10;background:rgba(0,0,0,0.75);padding:7px 18px;border-radius:20px;border:1px solid rgba(255,0,0,0.5);white-space:nowrap;">🧟 Press E — Toggle Zombie Mode</div>
-    <div id="parkour-hint" style="position:absolute;bottom:148px;left:50%;transform:translateX(-50%);color:white;font-size:15px;font-weight:bold;text-shadow:0 0 8px rgba(0,255,200,0.7);display:none;pointer-events:none;z-index:10;background:rgba(0,0,0,0.75);padding:7px 18px;border-radius:20px;border:1px solid rgba(0,255,200,0.5);white-space:nowrap;">🚀 Step on pad to teleport to Parkour Arena</div>
+    <div id="parkour-hint" style="display:none;"></div>
     <div id="clothes-shop-hint" style="position:absolute;bottom:112px;left:50%;transform:translateX(-50%);color:#ffaaff;font-size:15px;font-weight:bold;text-shadow:0 0 8px rgba(255,100,255,0.7);display:none;pointer-events:none;z-index:10;background:rgba(0,0,0,0.75);padding:7px 18px;border-radius:20px;border:1px solid rgba(255,100,255,0.5);white-space:nowrap;">👕 Press E — Clothes Shop</div>
     <div id="voidance-hint" style="position:absolute;bottom:100px;left:50%;transform:translateX(-50%);color:#00ff88;font-size:15px;font-weight:bold;text-shadow:0 0 8px rgba(0,255,100,0.7);display:none;pointer-events:none;z-index:10;background:rgba(0,0,0,0.85);padding:7px 18px;border-radius:20px;border:1px solid rgba(0,255,80,0.5);white-space:nowrap;">❓ Press E — Talk</div>
 
@@ -1789,6 +1832,16 @@
                 <button id="fake-pay-cancel" class="menu-btn" style="flex:1;background:#333;font-size:14px;">Cancel</button>
                 <button id="fake-pay-confirm" class="menu-btn" style="flex:1;background:linear-gradient(135deg,#226611,#113300);font-size:14px;">💳 Pay Now</button>
             </div>
+        </div>
+    </div>
+
+    <!-- DRAWING CANVAS -->
+    <div id="draw-canvas-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:2000;flex-direction:column;align-items:center;justify-content:center;">
+        <canvas id="draw-canvas" style="background:#fff;border:3px solid #3399ff;border-radius:8px;cursor:crosshair;"></canvas>
+        <div style="margin-top:12px;display:flex;gap:12px;align-items:center;">
+            <span style="color:#aaa;font-size:14px;">Size: <span id="draw-size-display">10</span>px</span>
+            <span style="color:#aaa;font-size:14px;">Press <kbd style="background:#333;padding:2px 8px;border-radius:4px;">E</kbd> or tap to draw</span>
+            <button id="draw-close-btn" style="background:#333;border:1px solid #555;color:#fff;padding:8px 16px;border-radius:6px;cursor:pointer;">Close (ESC)</button>
         </div>
     </div>
 
@@ -3893,114 +3946,7 @@
                 zSprite.scale.set(7, 1.75, 1); zSprite.position.set(-60, 4.5, 30); envGroup.add(zSprite);
                 window.zombieSpawnerPos = new THREE.Vector3(-60, 0, 30);
 
-                // -- PARKOUR TELEPORTER --
-                const PKX = 80, PKZ = 80, PKY_ARENA = 120;
-                window.parkourTeleporter = { gx: PKX, gz: PKZ, gy: 0, ax: 0, ay: PKY_ARENA, az: 0 };
-
-                // Ground pad
-                const padGlow = new THREE.Mesh(
-                    new THREE.CylinderGeometry(3.5, 3.5, 0.18, 32),
-                    new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 1.2, metalness: 0.3 })
-                );
-                padGlow.position.set(PKX, 0.09, PKZ); envGroup.add(padGlow);
-                const padRing = new THREE.Mesh(
-                    new THREE.TorusGeometry(4.2, 0.22, 8, 48),
-                    new THREE.MeshBasicMaterial({ color: 0x00ffff })
-                );
-                padRing.rotation.x = Math.PI / 2; padRing.position.set(PKX, 0.12, PKZ); envGroup.add(padRing);
-                const padLight = new THREE.PointLight(0x00ffcc, 2.5, 18);
-                padLight.position.set(PKX, 3, PKZ); envGroup.add(padLight);
-
-                // Label sprite
-                const lblCvs = document.createElement('canvas'); lblCvs.width = 256; lblCvs.height = 64;
-                const lblCtx = lblCvs.getContext('2d');
-                lblCtx.fillStyle = 'rgba(0,255,200,0.18)'; lblCtx.fillRect(0,0,256,64);
-                lblCtx.fillStyle = '#00ffcc'; lblCtx.font = 'bold 28px Arial'; lblCtx.textAlign = 'center'; lblCtx.fillText('⬆ PARKOUR', 128, 42);
-                const lblSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lblCvs) }));
-                lblSprite.scale.set(7, 1.75, 1); lblSprite.position.set(PKX, 4.5, PKZ); envGroup.add(lblSprite);
-
-                // -- FLOATING PARKOUR ARENA --
-                const pkMats = {
-                    base: new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.4 }),
-                    plat: new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x003322 }),
-                    chk:  new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0x443300 }),
-                    mov:  new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0x441100 }),
-                    fin:  new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044 }),
-                    sky:  new THREE.MeshStandardMaterial({ color: 0x0033aa, emissive: 0x001133 }),
-                };
-
-                // Start island
-                const startIsland = new THREE.Mesh(new THREE.BoxGeometry(12, 1.5, 12), pkMats.sky);
-                startIsland.position.set(0, PKY_ARENA - 0.75, 0); envGroup.add(startIsland);
-
-                // Return teleporter on arena
-                const retPad = new THREE.Mesh(
-                    new THREE.CylinderGeometry(2, 2, 0.18, 24),
-                    new THREE.MeshStandardMaterial({ color: 0xff4444, emissive: 0xff0000, emissiveIntensity: 1.0 })
-                );
-                retPad.position.set(-3, PKY_ARENA + 0.09, -3); envGroup.add(retPad);
-                const retRing = new THREE.Mesh(new THREE.TorusGeometry(2.8, 0.18, 8, 32), new THREE.MeshBasicMaterial({ color: 0xff6666 }));
-                retRing.rotation.x = Math.PI / 2; retRing.position.set(-3, PKY_ARENA + 0.12, -3); envGroup.add(retRing);
-                const retLbl = document.createElement('canvas'); retLbl.width = 192; retLbl.height = 48;
-                const retLblCtx = retLbl.getContext('2d'); retLblCtx.fillStyle = '#ff4444'; retLblCtx.font = 'bold 22px Arial'; retLblCtx.textAlign = 'center'; retLblCtx.fillText('⬇ RETURN', 96, 32);
-                const retSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(retLbl) }));
-                retSprite.scale.set(5, 1.25, 1); retSprite.position.set(-3, PKY_ARENA + 3.5, -3); envGroup.add(retSprite);
-                const retLight = new THREE.PointLight(0xff2222, 1.8, 12);
-                retLight.position.set(-3, PKY_ARENA + 2, -3); envGroup.add(retLight);
-
-                // Platforms
-                window.pkArena = [];
-                window.pkMoving = [];
-                const platDefs = [
-                    { x: 10, y: 0,  z: 0,  w: 5, d: 5, type: 'plat' },
-                    { x: 18, y: 3,  z: 6,  w: 4, d: 3, type: 'plat' },
-                    { x: 24, y: 7,  z: 14, w: 3, d: 3, type: 'chk'  },
-                    { x: 30, y: 11, z: 20, w: 2.5, d: 2.5, type: 'plat' },
-                    { x: 36, y: 15, z: 14, w: 2,   d: 4,   type: 'mov', axis: 'x', range: 5, speed: 1.4 },
-                    { x: 36, y: 19, z: 4,  w: 3,   d: 3,   type: 'plat' },
-                    { x: 28, y: 23, z: -4, w: 2.5, d: 2.5, type: 'plat' },
-                    { x: 18, y: 27, z: -8, w: 2,   d: 2,   type: 'mov', axis: 'z', range: 6, speed: 1.8 },
-                    { x:  8, y: 31, z:-14, w: 3,   d: 3,   type: 'chk'  },
-                    { x: -2, y: 35, z:-20, w: 2,   d: 2,   type: 'plat' },
-                    { x:-12, y: 39, z:-14, w: 2,   d: 2,   type: 'mov', axis: 'x', range: 4, speed: 2.1 },
-                    { x:-20, y: 43, z: -8, w: 3,   d: 3,   type: 'plat' },
-                    { x:-26, y: 47, z:  0, w: 2,   d: 2,   type: 'plat' },
-                    { x:-22, y: 51, z:  8, w: 2,   d: 2,   type: 'mov', axis: 'z', range: 5, speed: 2.4 },
-                    { x:-14, y: 55, z: 16, w: 3.5, d: 3.5, type: 'chk'  },
-                    { x: -4, y: 59, z: 22, w: 2,   d: 2,   type: 'plat' },
-                    { x:  6, y: 63, z: 16, w: 1.8, d: 1.8, type: 'plat' },
-                    { x: 14, y: 67, z:  8, w: 1.8, d: 1.8, type: 'mov', axis: 'x', range: 5, speed: 2.8 },
-                    { x: 10, y: 71, z:  0, w: 2,   d: 2,   type: 'plat' },
-                    { x:  0, y: 75, z:  0, w: 8,   d: 8,   type: 'fin'  },
-                ];
-                platDefs.forEach((pd, i) => {
-                    const mat = pkMats[pd.type];
-                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(pd.w, 0.5, pd.d), mat);
-                    mesh.position.set(pd.x, PKY_ARENA + pd.y, pd.z);
-                    mesh.castShadow = PERF.enableShadows;
-                    envGroup.add(mesh);
-                    window.pkArena.push(mesh);
-                    if (pd.type === 'mov') {
-                        window.pkMoving.push({ mesh, base: mesh.position.clone(), axis: pd.axis, range: pd.range, speed: pd.speed, phase: i * 0.7 });
-                    }
-                    if (pd.type === 'chk') {
-                        const cpL = new THREE.PointLight(0xffd700, 0.8, 10);
-                        cpL.position.copy(mesh.position).y += 2; envGroup.add(cpL);
-                    }
-                    if (pd.type === 'fin') {
-                        const finBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 12, 8), new THREE.MeshBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.25 }));
-                        finBeam.position.set(pd.x, PKY_ARENA + pd.y + 6, pd.z); envGroup.add(finBeam);
-                        const finL = new THREE.PointLight(0xff00ff, 2, 18); finL.position.set(pd.x, PKY_ARENA + pd.y + 4, pd.z); envGroup.add(finL);
-                        const finCvs = document.createElement('canvas'); finCvs.width = 256; finCvs.height = 64;
-                        const finCtx = finCvs.getContext('2d'); finCtx.fillStyle = '#ff00ff'; finCtx.font = 'bold 30px Arial'; finCtx.textAlign = 'center'; finCtx.fillText('🏆 FINISH!', 128, 44);
-                        const finSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(finCvs) }));
-                        finSprite.scale.set(6, 1.5, 1); finSprite.position.set(pd.x, PKY_ARENA + pd.y + 10, pd.z); envGroup.add(finSprite);
-                    }
-                });
-
-                // Sky backdrop for arena
-                const skyRing = new THREE.Mesh(new THREE.TorusGeometry(45, 3, 8, 32), new THREE.MeshBasicMaterial({ color: 0x001144, side: THREE.BackSide }));
-                skyRing.position.set(0, PKY_ARENA + 40, 0); envGroup.add(skyRing);
+                // -- PARKOUR DISABLED --
 
                 const bM = new THREE.MeshStandardMaterial({ map: concreteTex, color: 0x666666 });
                 const bW = (w, h, px, py, pz, r) => {
@@ -5909,19 +5855,8 @@
             if (vhh) vhh.style.display = nearVoidance ? 'block' : 'none';
             window._nearVoidance = nearVoidance;
 
-            // Parkour pad
-            if (window.parkourTeleporter && !window._pkTpCooldown) {
-                const tp = window.parkourTeleporter;
-                const px = avPos.x, pz = avPos.z, py = avPos.y;
-                const nearGround = Math.sqrt((px-tp.gx)**2+(pz-tp.gz)**2)<7 && Math.abs(py)<4;
-                const nearReturn = Math.sqrt((px-(tp.ax-3))**2+(pz-(tp.az-3))**2)<6 && Math.abs(py-tp.ay)<6;
-                const ph = document.getElementById('parkour-hint');
-                if (nearReturn) { ph.textContent='⬇ Step on red pad to return to ground'; ph.style.display='block'; }
-                else if (nearGround) { ph.textContent='🚀 Step on pad to teleport to Parkour Arena'; ph.style.display='block'; }
-                else ph.style.display='none';
-            } else {
-                document.getElementById('parkour-hint').style.display = 'none';
-            }
+            // Parkour pad - DISABLED
+            document.getElementById('parkour-hint').style.display = 'none';
         }
         document.getElementById('close-shop-btn').addEventListener('click', closeShop);
         document.getElementById('close-clothes-shop-btn').addEventListener('click', closeClothesShop);
@@ -7495,6 +7430,141 @@
                 if (window._openShirtMaker) { closeAdminPanel(); window._openShirtMaker(); }
             });
 
+            // Drawing Canvas functionality
+            let drawCanvasActive = false;
+            let isDrawing = false;
+            let drawCtx = null;
+            let lastDrawX = 0, lastDrawY = 0;
+            const drawCanvas = document.getElementById('draw-canvas');
+            const drawOverlay = document.getElementById('draw-canvas-overlay');
+            const drawStatus = document.getElementById('draw-status');
+            
+            function getDrawSettings() {
+                return {
+                    size: parseInt(document.getElementById('draw-brush-size')?.value || 10),
+                    color: document.getElementById('draw-color')?.value || '#ff4444',
+                    type: document.getElementById('draw-brush-type')?.value || 'round'
+                };
+            }
+            
+            function draw(x, y) {
+                if (!drawCtx) return;
+                const s = getDrawSettings();
+                drawCtx.lineWidth = s.size;
+                drawCtx.lineCap = s.type === 'round' ? 'round' : 'square';
+                drawCtx.strokeStyle = s.type === 'eraser' ? '#ffffff' : s.color;
+                
+                if (s.type === 'spray') {
+                    for (let i = 0; i < 20; i++) {
+                        const ox = (Math.random() - 0.5) * s.size * 2;
+                        const oy = (Math.random() - 0.5) * s.size * 2;
+                        drawCtx.fillStyle = s.color + '40';
+                        drawCtx.fillRect(x + ox, y + oy, 2, 2);
+                    }
+                } else {
+                    drawCtx.beginPath();
+                    drawCtx.moveTo(lastDrawX, lastDrawY);
+                    drawCtx.lineTo(x, y);
+                    drawCtx.stroke();
+                }
+                lastDrawX = x;
+                lastDrawY = y;
+            }
+            
+            function startDraw(x, y) {
+                isDrawing = true;
+                lastDrawX = x;
+                lastDrawY = y;
+                draw(x, y);
+            }
+            
+            if (drawCanvas) {
+                drawCtx = drawCanvas.getContext('2d');
+                drawCanvas.width = window.innerWidth * 0.8;
+                drawCanvas.height = window.innerHeight * 0.7;
+                drawCtx.fillStyle = '#ffffff';
+                drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
+                
+                drawCanvas.addEventListener('mousedown', e => {
+                    const rect = drawCanvas.getBoundingClientRect();
+                    startDraw(e.clientX - rect.left, e.clientY - rect.top);
+                });
+                drawCanvas.addEventListener('mousemove', e => {
+                    if (!isDrawing) return;
+                    const rect = drawCanvas.getBoundingClientRect();
+                    draw(e.clientX - rect.left, e.clientY - rect.top);
+                });
+                drawCanvas.addEventListener('mouseup', () => isDrawing = false);
+                drawCanvas.addEventListener('mouseleave', () => isDrawing = false);
+                
+                // Touch support
+                drawCanvas.addEventListener('touchstart', e => {
+                    e.preventDefault();
+                    const rect = drawCanvas.getBoundingClientRect();
+                    const t = e.touches[0];
+                    startDraw(t.clientX - rect.left, t.clientY - rect.top);
+                });
+                drawCanvas.addEventListener('touchmove', e => {
+                    e.preventDefault();
+                    if (!isDrawing) return;
+                    const rect = drawCanvas.getBoundingClientRect();
+                    const t = e.touches[0];
+                    draw(t.clientX - rect.left, t.clientY - rect.top);
+                });
+                drawCanvas.addEventListener('touchend', () => isDrawing = false);
+            }
+            
+            // Color swatches
+            document.querySelectorAll('.color-swatch').forEach(sw => {
+                sw.addEventListener('click', () => {
+                    const col = sw.dataset.col;
+                    document.getElementById('draw-color').value = col;
+                    document.querySelectorAll('.color-swatch').forEach(s => s.style.borderColor = 'transparent');
+                    sw.style.borderColor = '#fff';
+                });
+            });
+            
+            // Brush size slider
+            document.getElementById('draw-brush-size')?.addEventListener('input', () => {
+                document.getElementById('draw-size-display').textContent = document.getElementById('draw-brush-size').value;
+            });
+            
+            // Activate canvas button
+            document.getElementById('draw-activate-btn')?.addEventListener('click', () => {
+                drawCanvasActive = true;
+                drawOverlay.style.display = 'flex';
+                if (drawStatus) drawStatus.textContent = '✅ Canvas activated! Press E to draw.';
+                addSystemChat('🎬 Drawing canvas activated! Press E to draw.');
+                closeAdminPanel();
+            });
+            
+            // Clear canvas button
+            document.getElementById('draw-clear-btn')?.addEventListener('click', () => {
+                if (drawCtx) {
+                    drawCtx.fillStyle = '#ffffff';
+                    drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    if (drawStatus) drawStatus.textContent = '🗑 Canvas cleared!';
+                }
+            });
+            
+            // Close canvas button
+            document.getElementById('draw-close-btn')?.addEventListener('click', () => {
+                drawCanvasActive = false;
+                drawOverlay.style.display = 'none';
+            });
+            
+            // Toggle drawing with E key when canvas is active
+            window._toggleDrawing = function() {
+                if (!drawCanvasActive) return;
+                if (drawOverlay.style.display === 'none') {
+                    drawOverlay.style.display = 'flex';
+                    addSystemChat('✏ Drawing mode ON');
+                } else {
+                    drawOverlay.style.display = 'none';
+                    addSystemChat('✏ Drawing mode OFF');
+                }
+            };
+
             window.addEventListener('keydown', (e) => {
                 if (!adminDevEnabled) return;
                 if (e.code === 'F2') { e.preventDefault(); toggleAdminPanel(); }
@@ -7576,6 +7646,12 @@
 
 
         function handleInteract() {
+            // Drawing canvas toggle
+            if (drawCanvasActive) {
+                window._toggleDrawing();
+                return;
+            }
+            
             // Voidance NPC dialogue
             if (window._nearVoidance) {
                 if (dialogueActive) return;
@@ -8530,6 +8606,13 @@
         })();
 
         window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (drawCanvasActive) {
+                    drawCanvasActive = false;
+                    drawOverlay.style.display = 'none';
+                    return;
+                }
+            }
             if (e.key === 'Escape' && gameActive && !isDead && !chatFocused && !adminOpen) {
                 if (emoteWheelOpen) { closeEmoteWheel(); return; }
                 if (shopOpen) { closeShop(); return; }
@@ -8885,7 +8968,13 @@
                 () => { if (fI) { clearInterval(fI); fI = null; } }
             );
 
-            btnE('btn-interact', () => handleInteract());
+            btnE('btn-interact', () => {
+                if (drawCanvasActive) {
+                    window._toggleDrawing();
+                } else {
+                    handleInteract();
+                }
+            });
             btnE('btn-slot1', () => equipItem(1));
             btnE('btn-slot2', () => equipItem(2));
             btnE('btn-slot3', () => equipItem(3));
@@ -8962,13 +9051,22 @@
                 // Dynamic BTOOLS objects — stand on top of them
                 for (const id in dynamicObjects) {
                     const obj = dynamicObjects[id];
-                    if (obj.data.move) continue; // skip rotating objects
-                    obj.mesh.updateMatrixWorld(true);
-                    const aabb = new THREE.Box3().setFromObject(obj.mesh);
-                    if (!aabb) continue;
-                    if (x >= aabb.min.x - 0.5 && x <= aabb.max.x + 0.5 && z >= aabb.min.z - 0.5 && z <= aabb.max.z + 0.5) {
-                        const top = aabb.max.y;
-                        if (checkY >= top - 2.5) maxH = Math.max(maxH, top);
+                    if (obj.data.move) continue;
+                    const mesh = obj.mesh;
+                    mesh.updateMatrixWorld(true);
+                    const pos = mesh.position;
+                    const w = mesh.geometry.parameters?.width || 2;
+                    const h = mesh.geometry.parameters?.height || 2;
+                    const d = mesh.geometry.parameters?.depth || 2;
+                    const halfW = w / 2;
+                    const halfD = d / 2;
+                    const top = pos.y + h / 2;
+                    const minX = pos.x - halfW;
+                    const maxX = pos.x + halfW;
+                    const minZ = pos.z - halfD;
+                    const maxZ = pos.z + halfD;
+                    if (x >= minX - 0.3 && x <= maxX + 0.3 && z >= minZ - 0.3 && z <= maxZ + 0.3) {
+                        if (checkY >= top - 3) maxH = Math.max(maxH, top);
                     }
                 }
 
