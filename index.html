@@ -1990,7 +1990,7 @@
         const isTablet = /iPad|Tablet|iPad/i.test(navigator.userAgent) || (window.innerWidth >= 768 && window.innerHeight >= 768);
         const PERF = {
             mobileLowPower: isMobile && !isTablet,
-            pixelRatio: isTablet ? Math.min(2, window.devicePixelRatio || 2) : (isMobile ? Math.min(1.5, window.devicePixelRatio || 1.5) : Math.min(2, window.devicePixelRatio || 2)),
+            pixelRatio: isTablet ? Math.min(2, window.devicePixelRatio || 2) : (isMobile ? Math.min(2, window.devicePixelRatio || 2) : Math.min(2, window.devicePixelRatio || 2)),
             enableShadows: !isMobile,
             enableSoftShadows: !isMobile,
             enableFog: !isMobile,
@@ -2009,7 +2009,7 @@
             targetFPS: isTablet ? 60 : (isMobile ? 45 : 60)
         };
 
-        let mobileAdaptiveScale = isMobile ? 0.9 : 1.0;
+        let mobileAdaptiveScale = 1.0;
         let adaptiveFrameCounter = 0;
         let adaptiveTimeAccumulator = 0;
 
@@ -3237,7 +3237,7 @@
         camera.position.set(0, 4, 22);
 
         const renderer = new THREE.WebGLRenderer({
-            antialias: isTablet || !isMobile,
+            antialias: true,
             alpha: false,
             powerPreference: 'high-performance',
             stencil: false,
@@ -9899,8 +9899,8 @@
             if (adaptiveTimeAccumulator >= 1.0) {
                 const fps = adaptiveFrameCounter / adaptiveTimeAccumulator;
 
-                if (fps < 18 && mobileAdaptiveScale > 0.55) {
-                    mobileAdaptiveScale = Math.max(0.55, mobileAdaptiveScale - 0.1);
+                if (fps < 18 && mobileAdaptiveScale > 0.7) {
+                    mobileAdaptiveScale = Math.max(0.7, mobileAdaptiveScale - 0.1);
                     renderer.setSize(window.innerWidth * mobileAdaptiveScale, window.innerHeight * mobileAdaptiveScale, false);
                     renderer.domElement.style.width = window.innerWidth + 'px';
                     renderer.domElement.style.height = window.innerHeight + 'px';
